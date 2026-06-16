@@ -32,3 +32,8 @@ Thumbs.db
 # misc
 *.tsbuildinfo
 next-env.d.ts
+
+# локальные скрипты-помощники (не для репозитория)
+push.bat
+update.bat
+КАК-ОБНОВЛЯТЬ.txt

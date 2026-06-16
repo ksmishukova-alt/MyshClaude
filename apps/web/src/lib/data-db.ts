@@ -10,6 +10,12 @@ import type {
 } from "@/types/domain";
 import { isMyshroutkaEarned } from "@/types/domain";
 
+/** Supabase join может вернуть связанную таблицу как массив или объект. Приводим к объекту. */
+function one<T>(rel: T | T[] | null | undefined): T | undefined {
+  if (Array.isArray(rel)) return rel[0];
+  return rel ?? undefined;
+}
+
 const DEMO_CHILD = "11111111-1111-1111-1111-111111111111";
 const SUBJECT_ORDER: SubjectId[] = ["math", "russian", "reading", "english"];
 
@@ -99,7 +105,7 @@ export async function getHomeDataDb(): Promise<HomeScreenData | null> {
       items:
         revisionRows?.map((r) => ({
           taskId: r.task_id as string,
-          subjectId: (r as { tasks?: { subject?: SubjectId } }).tasks?.subject ?? "math",
+          subjectId: one((r as unknown as { tasks?: { subject?: SubjectId } | { subject?: SubjectId }[] }).tasks)?.subject ?? "math",
         })) ?? [],
     },
     stickers: { collected: 23, total: 120 }, // TODO: из child_stickers
@@ -128,13 +134,24 @@ export async function getSubjectTasksDb(
   if (!data) return null;
 
   return data.map((row, i) => {
-    const t = (row as { tasks: { id: string; title: string; mode: string; est_minutes: number | null } }).tasks;
+    const r = row as unknown as {
+      ord: number;
+      tasks: { id: string; title: string; mode: string; est_minutes: number | null }
+        | { id: string; title: string; mode: string; est_minutes: number | null }[];
+    };
+    const t = one(r.tasks);
+    if (!t) {
+      return {
+        id: "", subjectId, title: "", mode: "platform" as DailyTask["mode"],
+        order: r.ord ?? i + 1, status: "notStarted" as const,
+      };
+    }
     return {
       id: t.id,
       subjectId,
       title: t.title,
       mode: t.mode as DailyTask["mode"],
-      order: (row as { ord: number }).ord ?? i + 1,
+      order: r.ord ?? i + 1,
       estMinutes: t.est_minutes ?? undefined,
       status: "notStarted",
     };
@@ -167,26 +184,30 @@ export async function getTaskContentDb(taskId: string): Promise<TaskContent | nu
     .order("ord");
   const order = (cfg?.findIndex((c) => c.task_id === taskId) ?? 0) + 1;
 
-  const mappedSteps: TaskStep[] | undefined = steps?.map((s) => ({
-    id: s.id as string,
-    kind: s.kind as TaskStep["kind"],
-    prompt: s.prompt as string,
-    passage: (s.passage as string) ?? undefined,
-    hint: (s.hint as string) ?? undefined,
-    options:
-      (s.options as { id: string; label: string; is_correct: boolean }[] | null)?.map((o) => ({
-        id: o.id,
-        label: o.label,
-        isCorrect: o.is_correct,
-      })) ?? undefined,
-    correctInput: (s.correct_input as string) ?? undefined,
-  }));
+  const mappedSteps: TaskStep[] | undefined = steps?.map((row) => {
+    const s = row as unknown as {
+      id: string; kind: string; prompt: string;
+      passage: string | null; hint: string | null;
+      options: { id: string; label: string; is_correct: boolean }[] | null;
+      correct_input: string | null;
+    };
+    return {
+      id: s.id,
+      kind: s.kind as TaskStep["kind"],
+      prompt: s.prompt,
+      passage: s.passage ?? undefined,
+      hint: s.hint ?? undefined,
+      options:
+        s.options?.map((o) => ({ id: o.id, label: o.label, isCorrect: o.is_correct })) ?? undefined,
+      correctInput: s.correct_input ?? undefined,
+    };
+  });
 
   return {
     id: task.id,
-    subjectId: task.subject as SubjectId,
+    subjectId: (task.subject as unknown) as SubjectId,
     title: task.title,
-    mode: task.mode as TaskContent["mode"],
+    mode: (task.mode as unknown) as TaskContent["mode"],
     order,
     total: cfg?.length ?? 1,
     estMinutes: task.est_minutes ?? undefined,
