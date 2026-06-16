@@ -1,0 +1,19 @@
+.top-stage{inline-size:100dvw;min-block-size:100dvh;background-image:linear-gradient(180deg,rgba(143,208,255,.1),rgba(154,212,114,.06)),url('/myshmat-assets/background.png');background-size:cover;background-position:center;padding:clamp(16px,3vw,40px);display:flex;justify-content:center}
+.top-wrap{inline-size:min(100%,860px)}
+.top-top{display:flex;align-items:center;gap:14px;margin-bottom:clamp(10px,1.4vw,18px)}
+.top-back{background:rgba(255,255,255,.92);border-radius:999px;padding:9px 16px;font-weight:700;color:var(--blue);text-decoration:none;box-shadow:0 6px 16px rgba(37,75,131,.12);font-size:clamp(13px,1.4vw,16px)}
+.top-top h1{font-family:var(--font-display);font-weight:800;color:#082460;font-size:clamp(24px,3vw,36px)}
+.top-intro{background:rgba(255,255,255,.85);border-radius:16px;padding:clamp(12px,1.5vw,18px);color:#4a5775;font-weight:600;line-height:1.45;margin-bottom:clamp(16px,2vw,24px);font-size:clamp(13px,1.5vw,17px)}
+.top-islands{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(140px,22vw,220px),1fr));gap:clamp(12px,1.6vw,20px)}
+.top-isl{position:relative;display:flex;flex-direction:column;gap:8px;border-radius:clamp(16px,1.8vw,24px);padding:clamp(16px,2vw,26px);text-decoration:none;box-shadow:0 10px 26px rgba(37,75,131,.14);min-block-size:clamp(110px,14vw,150px);transition:all .15s;border:2px solid transparent}
+.top-isl.done{background:linear-gradient(160deg,#d6f5dc,#aee7ba)}
+.top-isl.active{background:linear-gradient(160deg,#fff2cf,#ffe09e);border-color:#f6a21a}
+.top-isl.locked{background:rgba(255,255,255,.55);opacity:.75}
+.top-isl.done:hover,.top-isl.active:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(37,75,131,.2)}
+.top-isl-num{inline-size:clamp(28px,3.2vw,38px);block-size:clamp(28px,3.2vw,38px);border-radius:50%;background:rgba(255,255,255,.75);display:grid;place-items:center;font-weight:900;color:#3a4a68;font-size:clamp(14px,1.6vw,19px)}
+.top-isl-title{font-family:var(--font-display);font-weight:800;color:#1d3a2a;font-size:clamp(16px,1.9vw,24px);line-height:1.1}
+.top-isl.active .top-isl-title{color:#7a5410}
+.top-isl.locked .top-isl-title{color:#6a7488}
+.top-isl-stars{font-size:clamp(15px,1.8vw,22px);color:#f6a21a;letter-spacing:2px;margin-top:auto}
+.top-isl-stars .muted{color:rgba(0,0,0,.14)}
+.top-lock{position:absolute;top:clamp(12px,1.6vw,18px);right:clamp(12px,1.6vw,18px);font-size:clamp(16px,2vw,24px)}

@@ -1,0 +1,25 @@
+.lg-stage{inline-size:100dvw;min-block-size:100dvh;background-image:linear-gradient(180deg,rgba(143,208,255,.15),rgba(154,212,114,.1)),url('/myshmat-assets/background.png');background-size:cover;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(16px,3vw,40px);gap:clamp(16px,2.4vw,30px)}
+.lg-logo{font-family:var(--font-display,system-ui);font-weight:800;color:#3FA0E8;font-size:clamp(28px,4vw,52px);letter-spacing:-.04em}
+.lg-logo span{color:#F6A21A}
+.lg-box{background:rgba(255,255,255,.96);border-radius:clamp(20px,2.6vw,34px);box-shadow:0 18px 50px rgba(37,75,131,.2);padding:clamp(24px,3.4vw,46px);inline-size:min(100%,440px);text-align:center;position:relative}
+.lg-title{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(22px,2.8vw,34px);margin-bottom:6px}
+.lg-sub{color:#5b6a86;font-weight:600;margin-bottom:clamp(16px,2.2vw,26px);font-size:clamp(14px,1.6vw,18px)}
+.lg-profiles{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,1.6vw,18px)}
+.lg-profile{border:0;background:#f4f7fd;border-radius:20px;padding:clamp(16px,2.2vw,28px) clamp(10px,1.4vw,16px);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .14s,box-shadow .14s;border:2px solid transparent}
+.lg-profile:hover{transform:translateY(-3px);border-color:#2E8BE6;box-shadow:0 10px 24px rgba(46,139,230,.18)}
+.lg-avatar{inline-size:clamp(56px,8vw,84px);block-size:clamp(56px,8vw,84px);border-radius:50%;background:linear-gradient(145deg,#b7e1ff,#7fb8e6);display:grid;place-items:center;font-size:clamp(30px,4.4vw,46px)}
+.lg-avatar.big{margin:0 auto clamp(10px,1.4vw,16px)}
+.lg-name{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(16px,1.9vw,22px)}
+.lg-grade{color:#7a88a8;font-weight:700;font-size:clamp(12px,1.3vw,15px)}
+.lg-back{position:absolute;top:clamp(14px,1.8vw,22px);left:clamp(14px,1.8vw,22px);border:0;background:#eef4ff;border-radius:999px;padding:7px 14px;font-family:inherit;font-weight:700;color:#2E8BE6;cursor:pointer;font-size:13px}
+.lg-dots{display:flex;justify-content:center;gap:clamp(12px,1.6vw,18px);margin-bottom:clamp(14px,2vw,22px)}
+.lg-dots span{inline-size:clamp(14px,1.8vw,20px);block-size:clamp(14px,1.8vw,20px);border-radius:50%;background:#dce3f0;transition:all .15s}
+.lg-dots span.on{background:#2E8BE6;transform:scale(1.1)}
+.lg-dots.err span{background:#f0a8b8;animation:lg-shake .3s}
+@keyframes lg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.lg-err-text{color:#d14d6e;font-weight:700;font-size:clamp(12px,1.3vw,15px);margin-bottom:clamp(12px,1.6vw,18px)}
+.lg-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.4vw,16px);max-inline-size:300px;margin:0 auto}
+.lg-key{border:0;background:#f4f7fd;border-radius:16px;cursor:pointer;font-family:inherit;font-weight:800;font-size:clamp(20px,2.6vw,30px);color:#082460;aspect-ratio:1.4;transition:background .12s,transform .1s}
+.lg-key:hover{background:#e4ecf8}
+.lg-key:active{transform:scale(.94)}
+.lg-key.del{font-size:clamp(18px,2.2vw,26px);color:#7a88a8}

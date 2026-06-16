@@ -1,0 +1,386 @@
+/**
+ * МышМат — доменные типы.
+ *
+ * Это контракт между фронтендом и бэкендом. Все статусы и сущности
+ * соответствуют ТЗ v1 (механика МышРутки).
+ *
+ * Ключевая идея МышРутки: ребёнок выполняет всё со своей стороны
+ * (все 4 предмета доходят до статуса `submitted`), и СРАЗУ, не дожидаясь
+ * проверки методиста, получает МышРутку — она открывает игровой мир
+ * (Карту тем, Лайфхаки, Сундуки, Награды).
+ */
+
+// ─────────────────────────────────────────────────────────────
+// Предметы
+// ─────────────────────────────────────────────────────────────
+
+export type SubjectId = "math" | "russian" | "reading" | "english";
+
+export interface Subject {
+  id: SubjectId;
+  /** Отображаемое имя, напр. «Математика» */
+  title: string;
+  /** Короткая иконка-глиф для плашки, напр. «1+2», «АБ», «📖», «Aa» */
+  glyph: string;
+}
+
+export const SUBJECTS: Record<SubjectId, Subject> = {
+  math: { id: "math", title: "Математика", glyph: "1+2" },
+  russian: { id: "russian", title: "Русский", glyph: "АБ" },
+  reading: { id: "reading", title: "Чтение", glyph: "📖" },
+  english: { id: "english", title: "Английский", glyph: "Aa" },
+};
+
+// ─────────────────────────────────────────────────────────────
+// Статусы (из ТЗ v1)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Статус одного предмета в Daily.
+ * notStarted → inProgress → submitted → (проверка) → successful | perfect
+ * needsRevision — методист вернул на доработку (попадает в «Мои доработки»).
+ */
+export type SubjectStatus =
+  | "notStarted"
+  | "inProgress"
+  | "submitted"
+  | "successful"
+  | "perfect"
+  | "needsRevision";
+
+/**
+ * Статус всей Daily-сессии за день.
+ * Daily становится `submitted`, когда ВСЕ предметы достигли `submitted`
+ * (со стороны ребёнка) — в этот момент выдаётся МышРутка.
+ */
+export type DailyStatus =
+  | "notStarted"
+  | "inProgress"
+  | "submitted" // все предметы submitted → выдана МышРутка
+  | "successful" // методист проверил всё, всё зачтено
+  | "perfect"; // всё зачтено без доработок
+
+/**
+ * Где выполняется задание:
+ * - platform: проверяется автоматически на платформе (auto-check)
+ * - worksheet: решается «на листочке», ребёнок загружает фото, проверяет взрослый
+ */
+export type TaskMode = "platform" | "worksheet";
+
+// ─────────────────────────────────────────────────────────────
+// Задания и попытки
+// ─────────────────────────────────────────────────────────────
+
+export interface DailyTask {
+  id: string;
+  subjectId: SubjectId;
+  title: string;
+  mode: TaskMode;
+  /** Порядок в списке предмета */
+  order: number;
+  /** Оценочное время в минутах */
+  estMinutes?: number;
+  status: SubjectStatus;
+}
+
+/** Сводка по предмету для главного экрана */
+export interface SubjectSummary {
+  subjectId: SubjectId;
+  status: SubjectStatus;
+  tasksTotal: number;
+  tasksDone: number;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Daily-сессия
+// ─────────────────────────────────────────────────────────────
+
+export interface DailySession {
+  id: string;
+  childId: string;
+  /** ISO-дата дня, напр. «2026-06-15» */
+  date: string;
+  status: DailyStatus;
+  subjects: SubjectSummary[];
+  /** Выдана ли МышРутка (открыт ли игровой мир) */
+  myshroutkaGranted: boolean;
+  submittedAt: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// МышРутка — логика разблокировки
+// ─────────────────────────────────────────────────────────────
+
+/** Предмет «сдан со стороны ребёнка», если дошёл до submitted и дальше. */
+export function isSubjectSubmittedByChild(status: SubjectStatus): boolean {
+  return (
+    status === "submitted" ||
+    status === "successful" ||
+    status === "perfect"
+  );
+}
+
+/**
+ * МышРутка выдаётся, когда ВСЕ предметы выполнены со стороны ребёнка.
+ * Это и есть условие разблокировки игрового мира.
+ */
+export function isMyshroutkaEarned(subjects: SubjectSummary[]): boolean {
+  return (
+    subjects.length > 0 &&
+    subjects.every((s) => isSubjectSubmittedByChild(s.status))
+  );
+}
+
+/** Сколько предметов уже сдано (для прогресс-бара Daily). */
+export function countSubmitted(subjects: SubjectSummary[]): number {
+  return subjects.filter((s) => isSubjectSubmittedByChild(s.status)).length;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Игровой мир (разблокируется МышРуткой одним событием)
+// ─────────────────────────────────────────────────────────────
+
+/** Все эти зоны открываются вместе при получении МышРутки. */
+export type WorldFeature =
+  | "topicMap" // Карта тем (олимпиадный маршрут)
+  | "lifehacks" // Лайфхаки
+  | "chests" // Сундуки
+  | "rewards" // Награды
+  | "duels"; // Дуэли (на MVP — заглушка, всегда «скоро»)
+
+/** Дуэли отложены на MVP — карточка-превью, не активна. */
+export const DUELS_ENABLED_MVP = false;
+
+export interface WorldState {
+  unlocked: boolean; // = myshroutkaGranted
+  features: Record<WorldFeature, boolean>;
+}
+
+export function buildWorldState(session: DailySession): WorldState {
+  const unlocked = session.myshroutkaGranted;
+  return {
+    unlocked,
+    features: {
+      topicMap: unlocked,
+      lifehacks: unlocked,
+      chests: unlocked,
+      rewards: unlocked,
+      duels: unlocked && DUELS_ENABLED_MVP,
+    },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Доработки и наклейки
+// ─────────────────────────────────────────────────────────────
+
+export interface RevisionItem {
+  taskId: string;
+  subjectId: SubjectId;
+}
+
+export interface RevisionsSummary {
+  count: number;
+  items: RevisionItem[];
+}
+
+export interface StickerAlbum {
+  collected: number;
+  total: number;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Профиль и неделя
+// ─────────────────────────────────────────────────────────────
+
+export interface ChildProfile {
+  id: string;
+  name: string;
+  grade: number; // класс
+  avatarUrl?: string;
+}
+
+export type DayMark = "done" | "pending" | "muted";
+
+export interface WeekDay {
+  /** «Пн», «Вт», … */
+  label: string;
+  mark: DayMark;
+}
+
+export interface HomeScreenData {
+  profile: ChildProfile;
+  session: DailySession;
+  revisions: RevisionsSummary;
+  stickers: StickerAlbum;
+  week: WeekDay[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Содержимое задания (экран /daily/[subject]/[task])
+// ─────────────────────────────────────────────────────────────
+
+/** Вариант ответа для шага-вопроса. */
+export interface AnswerOption {
+  id: string;
+  label: string;
+  isCorrect: boolean;
+}
+
+/**
+ * Тип одного шага задания:
+ * - reading: показываем текст/условие, ответа нет, только «Далее»
+ * - question: вопрос с вариантами или свободным вводом, есть проверка
+ */
+export type StepKind = "reading" | "question";
+
+/**
+ * Один шаг внутри задания «на платформе».
+ * Подсказка появляется ТОЛЬКО со второй попытки (после первой ошибки) —
+ * это позволяет измерять самостоятельность ребёнка.
+ */
+export interface TaskStep {
+  id: string;
+  kind: StepKind;
+  /** Заголовок/инструкция шага */
+  prompt: string;
+  /** Текст для чтения (reading) или контекст вопроса */
+  passage?: string;
+  /** Подсказка (question) — доступна со 2-й попытки */
+  hint?: string;
+  /** Варианты (question). Пусто → свободный ввод. */
+  options?: AnswerOption[];
+  /** Правильный ответ для свободного ввода */
+  correctInput?: string;
+  /** Если задано — показываем трекер чтения на N минут (дневник читателя) */
+  readingTimerMinutes?: number;
+}
+
+/**
+ * Полное содержимое задания. Экран ветвится по `mode`:
+ * - platform: проходим шаги по порядку (steps), мгновенная проверка
+ * - worksheet: показываем prompt + загрузка фото, отправка взрослому
+ */
+export interface TaskContent {
+  id: string;
+  subjectId: SubjectId;
+  title: string;
+  mode: TaskMode;
+  order: number;
+  total: number; // всего заданий в предмете (для «N из M»)
+  estMinutes?: number;
+  /** Условие/вопрос (для worksheet, и как интро для platform) */
+  prompt: string;
+  /** Шаги (только platform). Если 1 шаг — это обычное одношаговое задание. */
+  steps?: TaskStep[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Аналитика прохождения (самостоятельность)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Статистика по одному шагу — отправляется на бэкенд.
+ * solvedFirstTry === true и hintUsed === false → ребёнок справился сам.
+ */
+export interface StepStat {
+  stepId: string;
+  attempts: number; // сколько раз нажал «Проверить» до верного
+  hintUsed: boolean; // открывал ли подсказку (доступна со 2-й попытки)
+  solvedFirstTry: boolean; // верно с первой попытки, без подсказки
+  skippedWithError: boolean; // ушёл дальше, не решив верно
+}
+
+/** Сводка по всему заданию для оценки самостоятельности. */
+export interface TaskAttemptReport {
+  taskId: string;
+  steps: StepStat[];
+  /** доля шагов, решённых с первой попытки без подсказки (0..1) */
+  autonomyScore: number;
+}
+
+export function computeAutonomy(steps: StepStat[]): number {
+  const answerable = steps.filter((s) => s.attempts > 0 || s.skippedWithError);
+  if (answerable.length === 0) return 1;
+  const clean = answerable.filter((s) => s.solvedFirstTry && !s.hintUsed).length;
+  return clean / answerable.length;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Олимпиадная задача — запись решения (ТЗ v1)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Олимпиадный экран фокусируется на ЗАПИСИ решения, а не только на ответе.
+ * Ребёнок проходит этапы: что дано → план → шаги → рассуждение → ответ.
+ */
+export interface OlympiadProblem {
+  id: string;
+  topicId: string;
+  title: string;
+  statement: string;
+  /** Подсказка появляется со 2-й попытки (как в Daily) */
+  hint?: string;
+  /** Ожидаемый финальный ответ (для самопроверки) */
+  expectedAnswer?: string;
+  rewardStars: number;
+}
+
+/** Запись решения, которую ведёт ребёнок. */
+export interface SolutionRecord {
+  selectedData: string; // что из условия выбрал как важное
+  solutionPlan: string; // план решения
+  solutionSteps: string; // шаги вычислений
+  reasoningText: string; // рассуждение/почему так
+  finalAnswer: string; // итоговый ответ
+}
+
+export type SolutionField = keyof SolutionRecord;
+
+export const SOLUTION_FIELDS: { key: SolutionField; label: string; placeholder: string }[] = [
+  { key: "selectedData", label: "Что дано", placeholder: "Выпиши важные числа и условия…" },
+  { key: "solutionPlan", label: "План решения", placeholder: "С чего начнёшь, что найдёшь сначала…" },
+  { key: "solutionSteps", label: "Шаги решения", placeholder: "Запиши вычисления по шагам…" },
+  { key: "reasoningText", label: "Рассуждение", placeholder: "Объясни, почему так получается…" },
+  { key: "finalAnswer", label: "Ответ", placeholder: "Запиши итоговый ответ…" },
+];
+
+/** Полнота записи решения (0..1) — метрика для методиста. */
+export function reasoningCompleteness(rec: SolutionRecord): number {
+  const fields = Object.values(rec);
+  const filled = fields.filter((v) => v.trim().length > 0).length;
+  return filled / fields.length;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Панель методиста — очередь проверки заданий «на листочке»
+// ─────────────────────────────────────────────────────────────
+
+/** Вердикт методиста по работе. */
+export type ReviewVerdict = "successful" | "perfect" | "needsRevision";
+
+/** Элемент очереди проверки. */
+export interface ReviewItem {
+  attemptId: string;
+  childId: string;
+  childName: string;
+  subjectId: SubjectId;
+  taskId: string;
+  taskTitle: string;
+  /** URL загруженного фото решения */
+  solutionUrl: string;
+  submittedAt: string; // ISO
+}
+
+/** Решение методиста, отправляемое на бэкенд. */
+export interface ReviewDecision {
+  attemptId: string;
+  verdict: ReviewVerdict;
+  feedback: string;
+}
+
+export const VERDICT_LABELS: Record<ReviewVerdict, { label: string; tone: string }> = {
+  perfect: { label: "Отлично", tone: "green" },
+  successful: { label: "Зачёт", tone: "blue" },
+  needsRevision: { label: "На доработку", tone: "orange" },
+};
