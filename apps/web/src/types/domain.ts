@@ -156,8 +156,14 @@ export interface WorldState {
   features: Record<WorldFeature, boolean>;
 }
 
+/**
+ * ВРЕМЕННО НА ВРЕМЯ ТЕСТИРОВАНИЯ: всё открыто.
+ * Чтобы вернуть нормальную блокировку по МышРутке — поставьте false.
+ */
+export const UNLOCK_ALL_FOR_TESTING = true;
+
 export function buildWorldState(session: DailySession): WorldState {
-  const unlocked = session.myshroutkaGranted;
+  const unlocked = UNLOCK_ALL_FOR_TESTING || session.myshroutkaGranted;
   return {
     unlocked,
     features: {
@@ -200,7 +206,39 @@ export interface ChildProfile {
   avatarUrl?: string;
 }
 
-export type DayMark = "done" | "pending" | "muted";
+export type DayMark = "done" | "missed" | "today" | "future";
+
+/**
+ * Реальная неделя (Пн–Пт) на основе текущего дня.
+ * Система статусов (согласована в концепции):
+ *  - done   : день прошёл/идёт и Daily сделан → зелёный кружок с галочкой
+ *  - missed : день прошёл, Daily НЕ сделан → красная пунктирная рамка
+ *  - today  : идёт сегодня, Daily ещё не завершён → синяя пунктирная рамка
+ *  - future : день ещё не наступил → серый кружок с тремя точками
+ *
+ * doneDays — индексы (0=Пн..4=Пт) дней, где Daily выполнен.
+ * doneToday — выполнен ли сегодняшний Daily.
+ */
+export function buildWeek(
+  now: Date = new Date(),
+  doneDays: number[] = [0, 1],
+  doneToday = false,
+): WeekDay[] {
+  const labels = ["Пн", "Вт", "Ср", "Чт", "Пт"];
+  const js = now.getDay();
+  const todayIdx = js === 0 || js === 6 ? 5 : js - 1; // сб/вс → вся неделя прошла
+  return labels.map((label, i) => {
+    let mark: DayMark;
+    if (i < todayIdx) {
+      mark = doneDays.includes(i) ? "done" : "missed";
+    } else if (i === todayIdx) {
+      mark = doneToday ? "done" : "today";
+    } else {
+      mark = "future";
+    }
+    return { label, mark };
+  });
+}
 
 export interface WeekDay {
   /** «Пн», «Вт», … */

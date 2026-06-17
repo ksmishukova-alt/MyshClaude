@@ -119,9 +119,9 @@ export function DailyCard({
         </div>
         <div className="days" aria-label="Неделя">
           {week.map((d) => (
-            <div key={d.label} className={`day${d.mark === "pending" ? " pending" : d.mark === "muted" ? " muted" : ""}`}>
+            <div key={d.label} className={`day day-${d.mark}`}>
               <span>{d.label}</span>
-              <i>{d.mark === "done" ? "✓" : d.mark === "muted" ? "…" : ""}</i>
+              <i>{d.mark === "done" ? "✓" : d.mark === "future" ? "•••" : ""}</i>
             </div>
           ))}
         </div>

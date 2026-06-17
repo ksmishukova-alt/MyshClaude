@@ -74,6 +74,10 @@ apps/web/src/
 
 ## Подключение бэкенда
 
+Пошаговая инструкция: см. packages/db/SUPABASE-SETUP.md
+Быстрая проверка связи после настройки: открыть /api/health
+
+
 Когда API (Supabase/Postgres) будет готов, заменяются только функции в
 `lib/mock-data.ts` (`getHomeData`, `getSubjectTasks`) на `fetch` к API-роутам.
 Сигнатуры и типы те же — компоненты не меняются.

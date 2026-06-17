@@ -8,7 +8,7 @@ import type {
   TaskStep,
   SubjectSummary,
 } from "@/types/domain";
-import { isMyshroutkaEarned } from "@/types/domain";
+import { isMyshroutkaEarned, buildWeek } from "@/types/domain";
 
 /** Supabase join может вернуть связанную таблицу как массив или объект. Приводим к объекту. */
 function one<T>(rel: T | T[] | null | undefined): T | undefined {
@@ -109,13 +109,7 @@ export async function getHomeDataDb(): Promise<HomeScreenData | null> {
         })) ?? [],
     },
     stickers: { collected: 23, total: 120 }, // TODO: из child_stickers
-    week: [
-      { label: "Пн", mark: "done" },
-      { label: "Вт", mark: "done" },
-      { label: "Ср", mark: "done" },
-      { label: "Чт", mark: "pending" },
-      { label: "Пт", mark: "muted" },
-    ],
+    week: buildWeek(new Date(), [0, 1], false),
   };
 }
 

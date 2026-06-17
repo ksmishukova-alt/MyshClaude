@@ -8,7 +8,7 @@ import type {
   ReviewItem,
   ChildProfile,
 } from "@/types/domain";
-import { isMyshroutkaEarned } from "@/types/domain";
+import { isMyshroutkaEarned, buildWeek } from "@/types/domain";
 
 /**
  * Мок-слой данных. Повторяет контракт будущего API (Supabase/Postgres).
@@ -49,13 +49,7 @@ export function getHomeData(): HomeScreenData {
       ],
     },
     stickers: { collected: 23, total: 120 },
-    week: [
-      { label: "Пн", mark: "done" },
-      { label: "Вт", mark: "done" },
-      { label: "Ср", mark: "done" },
-      { label: "Чт", mark: "pending" },
-      { label: "Пт", mark: "muted" },
-    ],
+    week: buildWeek(new Date(), [0, 1], false),
   };
 }
 
@@ -278,10 +272,11 @@ export function getStickerAlbum(): { collected: number; total: number; stickers:
   const earnedEmojis = ["⭐","🏆","🔢","📚","🎯","🧠","✏️","🦉","🚀","💡","🌟","🥇","📐","🔬","🎓","🧩","🏅","🦋","🌈","🎨","🦊","🐢","🍀"];
   const stickers: Sticker[] = [];
   const pool = ["⭐","🏆","🔢","📚","🎯","🧠","✏️","🦉","🚀","💡","🌟","🥇","📐","🔬","🎓","🧩","🏅","🦋","🌈","🎨","🦊","🐢","🍀","🎪","🎭","🎸","⚽","🏀","🎲","🧸"];
-  for (let i = 0; i < 30; i++) {
+  const TOTAL = 120;
+  for (let i = 0; i < TOTAL; i++) {
     stickers.push({ id: `st-${i}`, emoji: pool[i % pool.length], earned: i < earnedEmojis.length });
   }
-  return { collected: earnedEmojis.length, total: 120, stickers };
+  return { collected: earnedEmojis.length, total: TOTAL, stickers };
 }
 
 
