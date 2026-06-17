@@ -105,7 +105,7 @@ export const WEEK1: DayPlan[] = [
         prompt: "Найди неподходящее слово и выбери подходящую замену.",
         steps: [{
           id: "ru-w1-d2-t1-s1", kind: "wordfix",
-          prompt: "В предложении есть слово, которое не подходит по смыслу.",
+          prompt: "В предложении есть слово, которое не подходит по смыслу. Нажми на него, чтобы исправить.",
           sentenceWords: "В библиотеке ребята тихо открыли зонтики и начали читать рассказ".split(" "),
           wrongWordIndex: 4, // "зонтики"
           replacements: ["книги", "сапоги", "чашки", "самолёты"],
@@ -125,7 +125,7 @@ export const WEEK1: DayPlan[] = [
         }],
       },
       {
-        id: "ru-w1-d2-t3", subjectId: "russian", title: "Списывание: тренировка после занятий",
+        id: "ru-w1-d2-t3", subjectId: "russian", title: "Списывание и задания",
         mode: "worksheet", order: 3, total: 3, estMinutes: 15,
         prompt:
           "Спиши текст аккуратно. Затем выполни мини-задания. После выполнения загрузи фото страницы.\n\n" +
@@ -145,10 +145,10 @@ export const WEEK1: DayPlan[] = [
           id: "ru-w1-d3-t1-s1", kind: "gapinput",
           prompt: "В словах пропущены буквы. Впиши нужную букву.",
           gaps: [
-            { label: "л_сной", accepted: ["е"], note: "проверь: лес" },
-            { label: "тр_пинка", accepted: ["о"], note: "проверь: тропы" },
-            { label: "гр_зовой", accepted: ["о"], note: "проверь: грозы" },
-            { label: "зв_рёк", accepted: ["е"], note: "проверь: зверь" },
+            { label: "л_сной", accepted: ["е"] },
+            { label: "тр_пинка", accepted: ["о"] },
+            { label: "гр_зовой", accepted: ["о"] },
+            { label: "зв_рёк", accepted: ["е"] },
           ],
           hint: "Подбери слово, где пропущенная гласная под ударением.",
         }],
@@ -172,12 +172,12 @@ export const WEEK1: DayPlan[] = [
         prompt: "Впиши проверочное слово так, чтобы нужный звук слышался ясно.",
         steps: [{
           id: "ru-w1-d3-t3-s1", kind: "gapinput",
-          prompt: "Подбери и впиши проверочное слово.",
+          prompt: "Подбери и впиши проверочное слово (родственное, где звук слышится ясно).",
           gaps: [
             { label: "с_ды", accepted: ["сад", "садик"] },
-            { label: "ло_ка", accepted: ["лодочка", "лодок"] },
-            { label: "моро_", accepted: ["морозы", "морозный"] },
-            { label: "зв_нок", accepted: ["звон", "звонкий"] },
+            { label: "лод_чка", accepted: ["лодочный", "лодочка"] },
+            { label: "моро_", accepted: ["морозный", "морозы"] },
+            { label: "зв_нок", accepted: ["звонкий", "звон"] },
           ],
           hint: "Проверочное слово должно быть родственным и помогать услышать нужный звук.",
         }],
@@ -226,7 +226,7 @@ export const WEEK1: DayPlan[] = [
         }],
       },
       {
-        id: "ru-w1-d4-t3", subjectId: "russian", title: "Списывание: прогулка у реки",
+        id: "ru-w1-d4-t3", subjectId: "russian", title: "Списывание и задания",
         mode: "worksheet", order: 3, total: 3, estMinutes: 15,
         prompt:
           "Спиши текст аккуратно. Затем выполни мини-задания. После выполнения загрузи фото страницы.\n\n" +
@@ -332,9 +332,9 @@ export const WEEK1: DayPlan[] = [
         prompt: "Put the letters in the correct order and type the word.",
         steps: [{
           id: "en-w1-d1-t4-s1", kind: "gapinput",
-          prompt: "Letters: S O O L H C. Clue: a place where children learn.",
+          prompt: "Make a word from the letters: S O O L H C.",
           gaps: [{ label: "Word:", accepted: ["school"] }],
-          hint: "Look at the clue and count the letters.",
+          hint: "A place where children learn. Six letters.",
         }],
       },
     ],
@@ -361,17 +361,17 @@ export const WEEK1: DayPlan[] = [
         prompt: "Put the letters in the correct order and type the word.",
         steps: [{
           id: "en-w1-d2-t2-s1", kind: "gapinput",
-          prompt: "Letters: P N L I E C. Clue: you write or draw with it.",
+          prompt: "Make a word from the letters: P N L I E C.",
           gaps: [{ label: "Word:", accepted: ["pencil"] }],
-          hint: "Look at the clue and count the letters.",
+          hint: "You write or draw with it. Six letters.",
         }],
       },
       {
-        id: "en-w1-d2-t3", subjectId: "english", title: "Writing: short e-mail",
+        id: "en-w1-d2-t3", subjectId: "english", title: "Письменная работа",
         mode: "worksheet", order: 3, total: 3, estMinutes: 15,
         prompt:
           "Copy the text neatly. Then do the mini-tasks under the text. Upload a photo of the whole page.\n\n" +
-          "Hello! My name is Tim. I am ten years old. I am in Year 4 at school. My favourite subjects are English and Art. I have got a blue schoolbag and a green pencil case. In my pencil case, I have got two pens, a pencil and a rubber. After school I often read books and play board games. I like my classroom because it is bright and friendly.\n\n" +
+          "Text to copy:\nHello! My name is Tim. I am ten years old. I am in Year 4 at school. My favourite subjects are English and Art. I have got a blue schoolbag and a green pencil case. In my pencil case, I have got two pens, a pencil and a rubber. After school I often read books and play board games. I like my classroom because it is bright and friendly.\n\n" +
           "Mini-tasks:\n1. Give the text a title.\n2. Underline three school things.\n3. Circle all capital letters that begin names or school subjects.",
       },
     ],
@@ -448,17 +448,17 @@ export const WEEK1: DayPlan[] = [
         prompt: "Find the hidden word.",
         steps: [{
           id: "en-w1-d4-t2-s1", kind: "gapinput",
-          prompt: "Find the school word hidden in: t-r-u-l-e-r-s. Clue: you measure with it.",
+          prompt: "Find the hidden school word in: t-r-u-l-e-r-s.",
           gaps: [{ label: "Word:", accepted: ["ruler"] }],
-          hint: "It is a long object with numbers.",
+          hint: "You measure with it. It is a long object with numbers.",
         }],
       },
       {
-        id: "en-w1-d4-t3", subjectId: "english", title: "Writing: about my family",
+        id: "en-w1-d4-t3", subjectId: "english", title: "Письменная работа",
         mode: "worksheet", order: 3, total: 3, estMinutes: 15,
         prompt:
           "Copy the text neatly and do the mini-tasks. Upload a photo.\n\n" +
-          "This is my family. I have got a mother, a father and a little brother. My mother is kind and clever. My father is tall and funny. My brother is six years old. We have got a small dog. Its name is Rex.\n\n" +
+          "Text to copy:\nThis is my family. I have got a mother, a father and a little brother. My mother is kind and clever. My father is tall and funny. My brother is six years old. We have got a small dog. Its name is Rex.\n\n" +
           "Mini-tasks:\n1. Underline the adjectives.\n2. Circle the possessive words (my, his, her, its).",
       },
     ],
@@ -487,20 +487,28 @@ export const WEEK1: DayPlan[] = [
         prompt: "Put the letters in order.",
         steps: [{
           id: "en-w1-d5-t2-s1", kind: "gapinput",
-          prompt: "Letters: A C H E T R E. Clue: a person who teaches.",
+          prompt: "Make a word from the letters: A C H E T R E.",
           gaps: [{ label: "Word:", accepted: ["teacher"] }],
-          hint: "Count the letters and remember school people.",
+          hint: "A person who teaches. Seven letters.",
         }],
       },
       {
-        id: "en-w1-d5-t3", subjectId: "english", title: "Audio dictation",
+        id: "en-w1-d5-t3", subjectId: "english", title: "Listening: dialogue",
         mode: "platform", order: 3, total: 3, estMinutes: 10,
-        prompt: "Press «Listen». Write the text in your notebook. Max 2 listens. Then upload a photo.",
+        prompt: "Listen to the dialogue (max 2 times), then answer the questions.",
         steps: [{
-          id: "en-w1-d5-t3-s1", kind: "audio",
-          prompt: "Audio dictation. No pause, no rewind. Max 2 listens.",
+          id: "en-w1-d5-t3-s1", kind: "listening",
+          prompt: "Press «Listen». You can listen up to 2 times. Then answer 5 questions.",
           listenLimit: 2,
-          hint: "Check capital letters and full stops after writing.",
+          // audioUrl добавим, когда будет озвучка диалога
+          listenQuestions: [
+            { q: "What is the girl's name?", options: ["Lucy", "Kate", "Emma"], correct: "Lucy" },
+            { q: "What year are they in?", options: ["Year 3", "Year 4", "Year 5"], correct: "Year 4" },
+            { q: "What is Lucy's favourite subject?", options: ["Maths", "Art", "PE"], correct: "Art" },
+            { q: "What two subjects does Tom like?", accepted: ["maths and pe", "pe and maths", "maths, pe", "maths pe"] },
+            { q: "What colour is Lucy's pencil case?", accepted: ["purple"] },
+          ],
+          hint: "Listen for the names and the words «favourite» and «pencil case».",
         }],
       },
     ],

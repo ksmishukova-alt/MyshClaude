@@ -230,3 +230,26 @@
 .aud-counter{font-weight:700;color:#5b6a86;font-size:clamp(13px,1.4vw,16px)}
 .aud-stub{color:#b07a1a}
 .aud-hint{color:#5b6a86;font-weight:600;line-height:1.45;font-size:clamp(13px,1.4vw,16px);margin-bottom:clamp(12px,1.6vw,18px)}
+
+/* ── Листочек: разделение условие / текст / задания (point 7) ── */
+.ws-body{margin-bottom:clamp(14px,1.8vw,22px)}
+.ws-copy{background:#f7f9fd;border:1px solid #e3e9f3;border-radius:16px;padding:clamp(14px,1.8vw,22px);margin:clamp(12px,1.6vw,18px) 0}
+.ws-copy-label{font-weight:800;color:#5b6a86;font-size:clamp(12px,1.3vw,15px);text-transform:uppercase;letter-spacing:.04em;margin-bottom:clamp(7px,.9vw,11px)}
+.ws-copy-text{font-size:clamp(15px,1.8vw,20px);line-height:1.7;color:#1a2550;font-weight:500;white-space:pre-line;border-left:3px solid #bcd9ff;padding-left:clamp(12px,1.5vw,18px)}
+.ws-tasks{background:#fff8ec;border:1px solid #ffe6bf;border-radius:16px;padding:clamp(14px,1.8vw,22px)}
+.ws-tasks-label{font-weight:800;color:#b5740a;font-size:clamp(12px,1.3vw,15px);text-transform:uppercase;letter-spacing:.04em;margin-bottom:clamp(8px,1vw,12px)}
+.ws-tasks-list{display:flex;flex-direction:column;gap:clamp(6px,.8vw,10px)}
+.ws-task-line{color:#4a3a18;font-weight:600;font-size:clamp(14px,1.6vw,18px);line-height:1.4}
+
+/* ── Аудирование (listening) ── */
+.lst-player{display:flex;flex-direction:column;align-items:center;gap:10px;background:#f4f7fd;border-radius:18px;padding:clamp(16px,2.2vw,26px);margin-bottom:clamp(12px,1.6vw,18px)}
+.lst-locked-note{color:#7a89a5;font-weight:600;text-align:center;font-size:clamp(13px,1.4vw,16px)}
+.lst-questions{display:flex;flex-direction:column;gap:clamp(12px,1.6vw,18px)}
+.lst-q{background:#fbfcfe;border:1px solid #e6ecf5;border-radius:14px;padding:clamp(12px,1.5vw,18px)}
+.lst-q-text{font-weight:700;color:#1a2550;font-size:clamp(14px,1.6vw,18px);margin-bottom:clamp(8px,1vw,12px)}
+.lst-opts{display:flex;flex-wrap:wrap;gap:clamp(7px,.9vw,11px)}
+.lst-opt{border:2px solid #e2e8f2;background:#fff;border-radius:11px;padding:clamp(8px,1vw,12px) clamp(14px,1.7vw,22px);font:inherit;font-weight:700;font-size:clamp(14px,1.5vw,18px);color:#1a2550;cursor:pointer;transition:all .12s}
+.lst-opt:hover:not(:disabled){border-color:var(--blue);background:#f4f8ff}
+.lst-opt.sel{border-color:var(--blue);background:#e8f2ff;color:var(--blue)}
+.lst-input{inline-size:min(100%,340px);border:2px solid #e2e8f2;border-radius:12px;padding:clamp(9px,1.1vw,13px) clamp(12px,1.5vw,16px);font:inherit;font-size:clamp(15px,1.6vw,19px);font-weight:600;color:#1d6ff0}
+.lst-input:focus{outline:none;border-color:#1d6ff0;background:#f4f8ff}

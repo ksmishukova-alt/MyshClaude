@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchSubjectTasks } from "@/lib/data";
 import { SUBJECTS, type SubjectId } from "@/types/domain";
-import { statusToChip, modeLabel, modeIcon } from "@/lib/status";
+import { statusToChip, modeLabel, modeIcon, plural } from "@/lib/status";
 import "./subject.css";
 
 const VALID: SubjectId[] = ["math", "russian", "reading", "english"];
@@ -29,7 +29,7 @@ export default async function SubjectPage({
             <h1>{meta.title}</h1>
           </div>
           <div className="subject-count">
-            {tasks.length} {tasks.length === 1 ? "задание" : "задания"}
+            {tasks.length} {plural(tasks.length, ["задание", "задания", "заданий"])}
           </div>
         </header>
 

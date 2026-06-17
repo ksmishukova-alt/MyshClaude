@@ -17,3 +17,8 @@
 .top-isl-stars{font-size:clamp(15px,1.8vw,22px);color:#f6a21a;letter-spacing:2px;margin-top:auto}
 .top-isl-stars .muted{color:rgba(0,0,0,.14)}
 .top-lock{position:absolute;top:clamp(12px,1.6vw,18px);right:clamp(12px,1.6vw,18px);font-size:clamp(16px,2vw,24px)}
+
+/* CTA «Вперёд!» на карте тем */
+.top-cta{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(180deg,#FFB33A,#FF7A00);color:#fff;font-weight:800;font-size:clamp(15px,1.9vw,20px);padding:clamp(12px,1.5vw,17px) clamp(26px,3vw,40px);border-radius:14px;text-decoration:none;box-shadow:0 10px 22px rgba(255,122,0,.32),inset 0 1px 0 rgba(255,255,255,.4);margin-bottom:clamp(16px,2vw,24px);transition:transform .14s}
+.top-cta:hover{transform:translateY(-2px) scale(1.03)}
+.top-cta span{font-size:.85em}

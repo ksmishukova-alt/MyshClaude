@@ -6,7 +6,7 @@ import "./preview.css";
 const KIND_LABEL: Record<string, string> = {
   punctuation: "Пунктуация", order: "Карточки", wordfix: "Замена слова",
   gapinput: "Ввод в пропуск", sort: "Сортировка", fields: "Поля-разбор",
-  question: "Выбор ответа", reading: "Чтение", audio: "Аудиодиктант",
+  question: "Выбор ответа", reading: "Чтение", audio: "Аудиодиктант", listening: "Аудирование",
 };
 
 function taskKind(t: { mode: string; steps?: { kind: string }[] }): string {

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { RevisionsSummary, StickerAlbum } from "@/types/domain";
+import type { RevisionsSummary, StickerAlbum, SubjectId } from "@/types/domain";
+import { plural } from "@/lib/status";
 
 export function SideColumn({
   revisions,
@@ -9,6 +10,8 @@ export function SideColumn({
   stickers: StickerAlbum;
 }) {
   const stickerPct = Math.round((stickers.collected / stickers.total) * 100);
+  const debtSubjects = new Set(revisions.items.map((it) => it.subjectId));
+  const hasDebt = (s: SubjectId) => debtSubjects.has(s);
 
   return (
     <aside className="side">
@@ -16,23 +19,22 @@ export function SideColumn({
       <article className="side-card card revisions">
         <div className="side-title-row">
           <span className="card-ico">✎</span>
-          <h2>Мои доработки</h2>
+          <h2 className="side-title-lg">Мои доработки</h2>
         </div>
-        <p>Задания, которые стоит закрепить</p>
         <div className="side-stat">
-          {revisions.count} <small>задания</small>
+          {revisions.count} <small>{plural(revisions.count, ["задание", "задания", "заданий"])}</small>
         </div>
         <div className="debt-list">
-          <div className="debt-item debt-math has-debt" aria-label="Математика">
+          <div className={`debt-item debt-math ${hasDebt("math") ? "has-debt" : "locked"}`} aria-label="Математика">
             <span className="debt-icon">123</span>
           </div>
-          <div className="debt-item debt-rus has-debt" aria-label="Русский">
+          <div className={`debt-item debt-rus ${hasDebt("russian") ? "has-debt" : "locked"}`} aria-label="Русский">
             <span className="debt-notebook"><i /><i /><i /></span>
           </div>
-          <div className="debt-item debt-read locked" aria-label="Чтение">
+          <div className={`debt-item debt-read ${hasDebt("reading") ? "has-debt" : "locked"}`} aria-label="Чтение">
             <span className="debt-book" />
           </div>
-          <div className="debt-item debt-eng locked" aria-label="Английский">
+          <div className={`debt-item debt-eng ${hasDebt("english") ? "has-debt" : "locked"}`} aria-label="Английский">
             <span className="debt-icon">ABC</span>
           </div>
         </div>

@@ -362,3 +362,9 @@ body:has(.stage){overflow:hidden;height:100%}
 a.route-card,a.mini,a.side-card,a.card{text-decoration:none!important}
 a.route-card h2,a.mini h3,a.mini h2,a.side-card h2,
 .route-card h2,.mini h3,.mini h2{text-decoration:none!important}
+
+/* Доработки: цвета активных иконок для чтения и английского */
+.debt-item.has-debt.debt-read{background:linear-gradient(135deg,#86d953,#209d39);color:#fff}
+.debt-item.has-debt.debt-eng{background:linear-gradient(135deg,#ff9aa2,#e8556b);color:#fff}
+/* Чуть крупнее заголовок «Мои доработки» */
+.side-card h2.side-title-lg{font-size:clamp(24px,5.4cqw,40px)}
