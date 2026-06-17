@@ -1,9 +1,12 @@
 import { getLoginProfiles } from "@/lib/mock-data";
+import { getLoginProfilesDb } from "@/lib/data-db";
 import { LoginScreen } from "@/components/LoginScreen";
 import "./login.css";
 
-export default function LoginPage() {
-  const profiles = getLoginProfiles().map((p) => ({
+export default async function LoginPage() {
+  // профили из БД, иначе из моков
+  const fromDb = await getLoginProfilesDb();
+  const profiles = (fromDb ?? getLoginProfiles()).map((p) => ({
     id: p.id,
     name: p.name,
     grade: p.grade,

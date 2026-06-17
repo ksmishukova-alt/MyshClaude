@@ -37,7 +37,3 @@ next-env.d.ts
 push.bat
 update.bat
 КАК-ОБНОВЛЯТЬ.txt
-apps/web/.env.local.txt
-*.env.local.txt
-apps/web/.env.local.txt
-*.env.local.txt

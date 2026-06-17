@@ -1,15 +1,30 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { getSupabase } from "@/lib/supabase";
 import { verifyChildLogin, findByShortCode } from "@/lib/mock-data";
+import { CHILD_COOKIE } from "@/lib/session";
 
 /**
  * POST /api/login
  * Тело: { mode: "pin", childId, pin } | { mode: "code", code }
  *
- * Возвращает { ok, childId } при успехе.
- * В моках проверка по статическим профилям; на проде — bcrypt-сравнение
- * pin_hash и поиск по short_code в child_profiles.
+ * При успехе ставит cookie myshmat_child = UUID ребёнка и возвращает { ok, childId }.
+ * PIN на проде проверяется через bcrypt (child_profiles.pin_hash).
+ * Если pin_hash не задан — для демо принимаем PIN 1234.
  */
+const DEMO_PIN = "1234";
+
+function success(childId: string) {
+  const res = NextResponse.json({ ok: true, childId });
+  res.cookies.set(CHILD_COOKIE, childId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30, // 30 дней
+  });
+  return res;
+}
+
 export async function POST(req: Request) {
   let body:
     | { mode: "pin"; childId: string; pin: string }
@@ -22,7 +37,7 @@ export async function POST(req: Request) {
 
   const sb = getSupabase();
 
-  // ── режим короткого кода ──
+  // ── короткий код ──
   if (body.mode === "code") {
     if (sb) {
       const { data } = await sb
@@ -30,30 +45,44 @@ export async function POST(req: Request) {
         .select("id")
         .eq("short_code", body.code.toUpperCase())
         .maybeSingle();
-      if (data?.id) return NextResponse.json({ ok: true, childId: data.id });
-      return NextResponse.json({ ok: false, reason: "not-found" }, { status: 200 });
+      if (data?.id) return success(data.id as string);
+      return NextResponse.json({ ok: false, reason: "not-found" });
     }
     const p = findByShortCode(body.code);
-    return p
-      ? NextResponse.json({ ok: true, childId: p.id })
-      : NextResponse.json({ ok: false, reason: "not-found" }, { status: 200 });
+    return p ? success(p.id) : NextResponse.json({ ok: false, reason: "not-found" });
   }
 
-  // ── режим PIN ──
+  // ── PIN ──
   if (sb) {
-    // на проде: получить pin_hash и сравнить bcrypt; здесь — заглушка
     const { data } = await sb
       .from("child_profiles")
-      .select("id")
+      .select("id,pin_hash")
       .eq("id", body.childId)
       .maybeSingle();
-    // ВНИМАНИЕ: реальная проверка PIN должна идти через bcrypt на сервере.
-    if (data?.id) return NextResponse.json({ ok: true, childId: data.id });
-    return NextResponse.json({ ok: false, reason: "bad-pin" }, { status: 200 });
+    if (!data?.id) {
+      return NextResponse.json({ ok: false, reason: "not-found" });
+    }
+    const hash = (data as { pin_hash?: string | null }).pin_hash;
+    let ok = false;
+    if (hash) {
+      // настоящая проверка bcrypt
+      try {
+        ok = await bcrypt.compare(body.pin, hash);
+      } catch {
+        ok = false;
+      }
+    } else {
+      // pin_hash не задан → демо-PIN
+      ok = body.pin === DEMO_PIN;
+    }
+    return ok
+      ? success(data.id as string)
+      : NextResponse.json({ ok: false, reason: "bad-pin" });
   }
 
+  // ── моки ──
   const ok = verifyChildLogin(body.childId, body.pin);
   return ok
-    ? NextResponse.json({ ok: true, childId: body.childId })
-    : NextResponse.json({ ok: false, reason: "bad-pin" }, { status: 200 });
+    ? success(body.childId)
+    : NextResponse.json({ ok: false, reason: "bad-pin" });
 }

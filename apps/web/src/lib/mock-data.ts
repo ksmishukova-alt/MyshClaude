@@ -9,6 +9,7 @@ import type {
   ChildProfile,
 } from "@/types/domain";
 import { isMyshroutkaEarned, buildWeek } from "@/types/domain";
+import { week1TaskById } from "@/lib/week1-content";
 
 /**
  * Мок-слой данных. Повторяет контракт будущего API (Supabase/Postgres).
@@ -184,7 +185,7 @@ const TASK_CONTENT: Record<string, TaskContent> = {
 };
 
 export function getTaskContent(taskId: string): TaskContent | null {
-  return TASK_CONTENT[taskId] ?? null;
+  return TASK_CONTENT[taskId] ?? week1TaskById(taskId);
 }
 
 /** Следующее задание того же предмета (или null, если это последнее). */
@@ -381,4 +382,49 @@ export function getReviewQueue(): ReviewItem[] {
       submittedAt: "2026-06-16T09:05:00Z",
     },
   ];
+}
+
+// ─── Награды и сундуки (игровой слой) ───
+export interface RewardCard {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  earned: boolean;
+  earnedAt?: string;
+}
+
+export function getRewards(): { stars: number; cards: RewardCard[] } {
+  return {
+    stars: 245,
+    cards: [
+      { id: "r1", type: "myshroutka", title: "МышРутка", description: "Выполнен весь Daily", earned: true, earnedAt: "2026-06-15" },
+      { id: "r2", type: "perfectDaily", title: "Идеальный день", description: "Daily без единой доработки", earned: true, earnedAt: "2026-06-14" },
+      { id: "r3", type: "skill", title: "Мастер сложения", description: "10 верных примеров подряд", earned: true, earnedAt: "2026-06-12" },
+      { id: "r4", type: "effort", title: "Упорство", description: "Исправил 5 доработок", earned: true, earnedAt: "2026-06-10" },
+      { id: "r5", type: "olympiad", title: "Юный олимпиадник", description: "Решена первая олимпиадная задача", earned: false },
+      { id: "r6", type: "collection", title: "Коллекционер", description: "Собрано 50 наклеек", earned: false },
+      { id: "r7", type: "myshPechat", title: "МышПечать", description: "7 дней подряд с Daily", earned: false },
+      { id: "r8", type: "surprise", title: "Сюрприз", description: "Секретная награда", earned: false },
+    ],
+  };
+}
+
+export interface ChestItem {
+  id: string;
+  tier: "basic" | "silver" | "gold" | "secret";
+  title: string;
+  opened: boolean;
+  reward?: string;
+}
+
+export function getChests(): { chests: ChestItem[] } {
+  return {
+    chests: [
+      { id: "c1", tier: "basic", title: "Бронзовый сундук", opened: false, reward: "+15 ⭐ и наклейка" },
+      { id: "c2", tier: "silver", title: "Серебряный сундук", opened: false, reward: "+30 ⭐ и редкая наклейка" },
+      { id: "c3", tier: "gold", title: "Золотой сундук", opened: false, reward: "+50 ⭐ и особая награда" },
+      { id: "c4", tier: "secret", title: "Секретный сундук", opened: false, reward: "???" },
+    ],
+  };
 }

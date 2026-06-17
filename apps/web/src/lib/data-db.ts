@@ -46,14 +46,14 @@ async function ensureSession(childId: string): Promise<string | null> {
   return (created?.id as string) ?? null;
 }
 
-export async function getHomeDataDb(): Promise<HomeScreenData | null> {
+export async function getHomeDataDb(childId: string = DEMO_CHILD): Promise<HomeScreenData | null> {
   const sb = getSupabase();
   if (!sb) return null;
 
   const { data: child } = await sb
     .from("child_profiles")
     .select("id,name,grade,stars")
-    .eq("id", DEMO_CHILD)
+    .eq("id", childId)
     .single();
   if (!child) return null;
 
@@ -226,4 +226,23 @@ export async function getNextTaskIdDb(
   const idx = data.findIndex((c) => c.task_id === currentId);
   if (idx === -1 || idx === data.length - 1) return null;
   return data[idx + 1].task_id as string;
+}
+
+/** Профили детей для экрана входа (из БД). */
+export async function getLoginProfilesDb(): Promise<
+  { id: string; name: string; grade: number; shortCode: string }[] | null
+> {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data } = await sb
+    .from("child_profiles")
+    .select("id,name,grade,short_code")
+    .order("name");
+  if (!data) return null;
+  return data.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    grade: (r.grade as number) ?? 0,
+    shortCode: (r.short_code as string) ?? "",
+  }));
 }

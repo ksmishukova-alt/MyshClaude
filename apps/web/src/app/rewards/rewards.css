@@ -1,0 +1,17 @@
+.rw-stage{inline-size:100dvw;min-block-size:100dvh;background-image:linear-gradient(180deg,rgba(143,208,255,.1),rgba(154,212,114,.06)),url('/myshmat-assets/background.png');background-size:cover;background-position:center;padding:clamp(16px,3vw,40px);display:flex;justify-content:center;overflow-y:auto}
+.rw-wrap{inline-size:min(100%,820px)}
+.rw-top{display:flex;align-items:center;gap:14px;margin-bottom:clamp(10px,1.4vw,16px)}
+.rw-back{background:rgba(255,255,255,.92);border-radius:999px;padding:9px 16px;font-weight:700;color:var(--blue,#2E8BE6);text-decoration:none;box-shadow:0 6px 16px rgba(37,75,131,.12);font-size:clamp(13px,1.4vw,16px)}
+.rw-top h1{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(22px,3vw,36px)}
+.rw-stars{margin-left:auto;background:#fff7e6;border:1px solid #ffe0a3;border-radius:999px;padding:7px 16px;color:#b5740a;font-weight:800;font-size:clamp(13px,1.4vw,17px)}
+.rw-intro{background:rgba(255,255,255,.85);border-radius:16px;padding:clamp(11px,1.5vw,16px);color:#4a5775;font-weight:600;margin-bottom:clamp(14px,1.8vw,22px);font-size:clamp(13px,1.5vw,16px)}
+.rw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(140px,22vw,190px),1fr));gap:clamp(12px,1.6vw,18px)}
+.rw-card{background:#fff;border-radius:20px;padding:clamp(16px,2vw,24px);text-align:center;box-shadow:0 10px 26px rgba(37,75,131,.12);display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .15s}
+.rw-card.earned{border:2px solid #ffe0a3}
+.rw-card.earned:hover{transform:translateY(-4px) scale(1.02)}
+.rw-card.locked{opacity:.6;filter:grayscale(.5)}
+.rw-ic{font-size:clamp(34px,5vw,52px);line-height:1}
+.rw-card.earned .rw-ic{filter:drop-shadow(0 4px 8px rgba(245,166,35,.4))}
+.rw-card-title{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(14px,1.6vw,18px);line-height:1.1}
+.rw-card-desc{color:#6b7894;font-weight:600;font-size:clamp(11px,1.3vw,14px);line-height:1.3}
+.rw-date{margin-top:auto;color:#b5740a;font-weight:700;font-size:clamp(10px,1.1vw,12px)}

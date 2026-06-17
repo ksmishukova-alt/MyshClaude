@@ -2,57 +2,66 @@ import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
 
 /**
- * GET /api/health
- * Диагностика подключения к Supabase. Открой в браузере:
- *   https://<твой-домен>/api/health
- *
- * Отвечает JSON:
- *  - supabaseConfigured: заданы ли переменные окружения
- *  - canQuery: удалось ли выполнить запрос к БД
- *  - childCount: сколько профилей детей видно (проверка, что миграции+сид прошли)
- *  - error: текст ошибки, если запрос не удался
- *
- * Никаких секретов в ответе нет — только статусы.
+ * GET /api/health — расширенная диагностика подключения к Supabase.
+ * Показывает максимум деталей, чтобы понять причину сбоя.
  */
 export async function GET() {
-  const sb = getSupabase();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || null;
+  const anonSet = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const secretSet = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  // какой ключ реально используется и его префикс (без раскрытия значения)
+  const usedKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "";
+  const keyPrefix = usedKey.slice(0, 12); // напр. "sb_publishab" или "eyJhbGciOiJ"
+
+  const sb = getSupabase();
   if (!sb) {
     return NextResponse.json({
       supabaseConfigured: false,
-      canQuery: false,
-      hint: "Переменные NEXT_PUBLIC_SUPABASE_URL / ключ не заданы — приложение работает на моках.",
+      url,
+      anonSet,
+      secretSet,
+      hint: "Переменные окружения не заданы.",
     });
   }
 
   try {
-    const { count, error } = await sb
+    const { data, count, error, status, statusText } = await sb
       .from("child_profiles")
-      .select("*", { count: "exact", head: true });
-
-    if (error) {
-      return NextResponse.json({
-        supabaseConfigured: true,
-        canQuery: false,
-        error: error.message,
-        hint: "Ключи заданы, но запрос не прошёл. Проверь, что миграции выполнены и таблица child_profiles существует.",
-      });
-    }
+      .select("id,name", { count: "exact" })
+      .limit(3);
 
     return NextResponse.json({
       supabaseConfigured: true,
-      canQuery: true,
-      childCount: count ?? 0,
-      hint:
-        (count ?? 0) > 0
-          ? "Всё работает: Supabase подключён, данные видны."
-          : "Подключение есть, но таблица пустая — выполни сид 0002_seed.sql.",
+      url,
+      anonSet,
+      secretSet,
+      keyPrefix,
+      canQuery: !error,
+      httpStatus: status ?? null,
+      httpStatusText: statusText ?? null,
+      childCount: count ?? null,
+      rowsReturned: data?.length ?? 0,
+      sampleNames: data?.map((r) => r.name) ?? [],
+      error: error
+        ? {
+            message: error.message || "(пусто)",
+            code: error.code || null,
+            details: error.details || null,
+            hint: error.hint || null,
+          }
+        : null,
     });
   } catch (e) {
     return NextResponse.json({
       supabaseConfigured: true,
+      url,
+      keyPrefix,
       canQuery: false,
-      error: e instanceof Error ? e.message : String(e),
+      caughtError: e instanceof Error ? { name: e.name, message: e.message } : String(e),
     });
   }
 }

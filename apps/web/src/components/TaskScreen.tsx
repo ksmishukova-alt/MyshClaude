@@ -3,11 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TaskContent, TaskStep, StepStat } from "@/types/domain";
-import { SUBJECTS, computeAutonomy } from "@/types/domain";
+import { SUBJECTS, computeAutonomy, MAX_ATTEMPTS } from "@/types/domain";
 import { modeLabel, modeIcon } from "@/lib/status";
 import { ReadingTimer } from "@/components/ReadingTimer";
+import { PunctuationRunner } from "@/components/runners/PunctuationRunner";
+import { OrderRunner } from "@/components/runners/OrderRunner";
+import { WordFixRunner } from "@/components/runners/WordFixRunner";
+import { GapInputRunner } from "@/components/runners/GapInputRunner";
+import { SortRunner } from "@/components/runners/SortRunner";
+import { FieldsRunner } from "@/components/runners/FieldsRunner";
+import { AudioDictationRunner } from "@/components/runners/AudioDictationRunner";
 
-type StepPhase = "solving" | "correct" | "wrong";
+type StepPhase = "solving" | "correct" | "wrong" | "failed";
 
 interface StepState {
   attempts: number;
@@ -21,6 +28,11 @@ interface StepState {
 function freshStep(): StepState {
   return { attempts: 0, hintUsed: false, phase: "solving", selected: null, input: "", solvedFirstTry: false };
 }
+
+const INTERACTIVE: Record<string, true> = {
+  punctuation: true, order: true, wordfix: true,
+  gapinput: true, sort: true, fields: true, audio: true,
+};
 
 export function TaskScreen({ task, nextTaskId }: { task: TaskContent; nextTaskId: string | null }) {
   const router = useRouter();
@@ -52,12 +64,27 @@ export function TaskScreen({ task, nextTaskId }: { task: TaskContent; nextTaskId
   const isLast = stepIdx === steps.length - 1;
   const hasOptions = (step.options?.length ?? 0) > 0;
   const isReading = step.kind === "reading";
+  const isInteractive = !!INTERACTIVE[step.kind];
 
   function patch(p: Partial<StepState>) {
     setStates((arr) => arr.map((s, i) => (i === stepIdx ? { ...s, ...p } : s)));
   }
 
-  function check() {
+  /** Общий обработчик результата проверки (для всех типов шагов). */
+  function registerResult(ok: boolean) {
+    const attempts = st.attempts + 1;
+    let phase: StepPhase;
+    if (ok) phase = "correct";
+    else if (attempts >= MAX_ATTEMPTS) phase = "failed"; // 3 попытки → «Пока не получилось»
+    else phase = "wrong";
+    patch({
+      attempts,
+      phase,
+      solvedFirstTry: ok && attempts === 1 && !st.hintUsed ? true : st.solvedFirstTry,
+    });
+  }
+
+  function checkSimple() {
     let ok = false;
     if (hasOptions) {
       ok = !!step.options!.find((o) => o.id === st.selected)?.isCorrect;
@@ -67,18 +94,13 @@ export function TaskScreen({ task, nextTaskId }: { task: TaskContent; nextTaskId
           ? st.input.trim().length > 0
           : st.input.trim().toLowerCase() === step.correctInput.trim().toLowerCase();
     }
-    const attempts = st.attempts + 1;
-    patch({
-      attempts,
-      phase: ok ? "correct" : "wrong",
-      solvedFirstTry: ok && attempts === 1 && !st.hintUsed ? true : st.solvedFirstTry,
-    });
+    registerResult(ok);
   }
 
   function buildReport() {
     const stats: StepStat[] = steps.map((s, i) => {
       const ss = states[i];
-      const answerable = s.kind === "question";
+      const answerable = s.kind !== "reading";
       const solvedCorrect = ss.phase === "correct";
       return {
         stepId: s.id,
@@ -94,14 +116,11 @@ export function TaskScreen({ task, nextTaskId }: { task: TaskContent; nextTaskId
   function goForward() {
     if (isLast) {
       const report = buildReport();
-      // отправляем попытку и аналитику; на моках API вернёт ok:false — это нормально
       void fetch("/api/attempts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId: "",
           taskId: task.id,
-          childId: "",
           mode: task.mode,
           isCorrect: states.every((s) => s.phase === "correct"),
           autonomyScore: report.autonomyScore,
@@ -120,8 +139,10 @@ export function TaskScreen({ task, nextTaskId }: { task: TaskContent; nextTaskId
   }
 
   const canCheck = hasOptions ? st.selected !== null : st.input.trim().length > 0;
-  const hintAvailable = !!step.hint && st.attempts >= 1; // подсказка только со 2-й попытки
+  const hintAvailable = !!step.hint && st.attempts >= 1; // подсказка со 2-й попытки
   const stars = st.hintUsed ? 5 : 10;
+  const done = st.phase === "correct" || st.phase === "failed";
+  const locked = done; // интерактивный раннер блокируется после успеха/исчерпания попыток
 
   return (
     <main className="task-stage" aria-label={`${subject.title}: ${task.title}`}>
@@ -147,6 +168,7 @@ export function TaskScreen({ task, nextTaskId }: { task: TaskContent; nextTaskId
           )}
           <p className="ts-prompt">{step.prompt}</p>
 
+          {/* READING */}
           {isReading && (
             <div className="ts-actions">
               <button className="ts-cta" onClick={goForward}>
@@ -155,17 +177,38 @@ export function TaskScreen({ task, nextTaskId }: { task: TaskContent; nextTaskId
             </div>
           )}
 
-          {!isReading && hasOptions && (
+          {/* INTERACTIVE RUNNERS */}
+          {step.kind === "punctuation" && (
+            <PunctuationRunner step={step} locked={locked} onCheck={registerResult} />
+          )}
+          {step.kind === "order" && (
+            <OrderRunner step={step} locked={locked} onCheck={registerResult} />
+          )}
+          {step.kind === "wordfix" && (
+            <WordFixRunner step={step} locked={locked} onCheck={registerResult} />
+          )}
+          {step.kind === "gapinput" && (
+            <GapInputRunner step={step} locked={locked} onCheck={registerResult} />
+          )}
+          {step.kind === "sort" && (
+            <SortRunner step={step} locked={locked} onCheck={registerResult} />
+          )}
+          {step.kind === "fields" && (
+            <FieldsRunner step={step} locked={locked} onCheck={registerResult} />
+          )}
+          {step.kind === "audio" && (
+            <AudioDictationRunner step={step} onDone={() => patch({ phase: "correct" })} />
+          )}
+
+          {/* QUESTION (options) */}
+          {step.kind === "question" && hasOptions && (
             <div className="ts-options">
               {step.options!.map((o) => {
                 let cls = "ts-opt";
                 if (st.phase === "solving" && st.selected === o.id) cls += " sel";
-                if (st.phase !== "solving") {
-                  if (o.isCorrect) cls += " ok";
-                  else if (st.selected === o.id) cls += " no";
-                }
+                if (st.phase === "correct" && o.isCorrect) cls += " ok";
                 return (
-                  <button key={o.id} className={cls} disabled={st.phase === "correct"}
+                  <button key={o.id} className={cls} disabled={done}
                     onClick={() => patch({ selected: o.id, phase: "solving" })}>
                     {o.label}
                   </button>
@@ -174,33 +217,49 @@ export function TaskScreen({ task, nextTaskId }: { task: TaskContent; nextTaskId
             </div>
           )}
 
-          {!isReading && step.readingTimerMinutes && (
+          {/* reading timer (diary) */}
+          {step.kind === "question" && step.readingTimerMinutes && (
             <ReadingTimer goalMinutes={step.readingTimerMinutes} />
           )}
 
-          {!isReading && !hasOptions && (
+          {/* QUESTION (free input) */}
+          {step.kind === "question" && !hasOptions && (
             <textarea className="ts-input" placeholder="Напиши свой ответ…" value={st.input}
-              disabled={st.phase === "correct"} onChange={(e) => patch({ input: e.target.value })} rows={3} />
+              disabled={done} onChange={(e) => patch({ input: e.target.value })} rows={3} />
           )}
 
-          {!isReading && hintAvailable && st.phase !== "correct" && (
+          {/* Подсказка со 2-й попытки */}
+          {!isReading && hintAvailable && !done && (
             <div className="ts-hint-row">
               <button className="ts-hint-btn" onClick={() => patch({ hintUsed: true })}>💡 Подсказка</button>
             </div>
           )}
           {!isReading && st.hintUsed && step.hint && <div className="ts-hint">{step.hint}</div>}
 
-          {!isReading && st.phase === "correct" && (
+          {/* Результаты */}
+          {st.phase === "correct" && step.kind !== "audio" && (
             <div className="ts-result ok"><b>Верно! 🎉</b><span>+{stars} ⭐ {st.hintUsed && "(с подсказкой)"}</span></div>
           )}
-          {!isReading && st.phase === "wrong" && (
-            <div className="ts-result no"><b>Пока неверно 💪</b><span>Можешь попробовать ещё или пойти дальше</span></div>
+          {st.phase === "wrong" && (
+            <div className="ts-result no">
+              <b>Проверь ещё раз 💪</b>
+              <span>Попытка {st.attempts} из {MAX_ATTEMPTS}</span>
+            </div>
+          )}
+          {st.phase === "failed" && (
+            <div className="ts-result no">
+              <b>Пока не получилось</b>
+              <span>Вернёмся к этому заданию позже — оно ушло в «Мои доработки».</span>
+            </div>
           )}
 
+          {/* Кнопки */}
           {!isReading && (
             <div className="ts-actions">
-              {st.phase !== "correct" && (
-                <button className="ts-cta secondary" disabled={!canCheck} onClick={check}>Проверить</button>
+              {/* кнопку «Проверить» рисуем только для простых шагов;
+                  интерактивные раннеры имеют свою кнопку проверки внутри */}
+              {!isInteractive && !done && (
+                <button className="ts-cta secondary" disabled={!canCheck} onClick={checkSimple}>Проверить</button>
               )}
               <button className="ts-cta" onClick={goForward}>
                 {isLast ? (nextTaskId ? "Следующая задача →" : "Завершить задание") : "Следующий вопрос →"}

@@ -1,0 +1,22 @@
+.ch-stage{inline-size:100dvw;min-block-size:100dvh;background-image:linear-gradient(180deg,rgba(143,208,255,.1),rgba(154,212,114,.06)),url('/myshmat-assets/background.png');background-size:cover;background-position:center;padding:clamp(16px,3vw,40px);display:flex;justify-content:center;overflow-y:auto}
+.ch-wrap{inline-size:min(100%,760px)}
+.ch-top{display:flex;align-items:center;gap:14px;margin-bottom:clamp(10px,1.4vw,16px)}
+.ch-back{background:rgba(255,255,255,.92);border-radius:999px;padding:9px 16px;font-weight:700;color:var(--blue,#2E8BE6);text-decoration:none;box-shadow:0 6px 16px rgba(37,75,131,.12);font-size:clamp(13px,1.4vw,16px)}
+.ch-top h1{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(22px,3vw,36px)}
+.ch-intro{background:rgba(255,255,255,.85);border-radius:16px;padding:clamp(11px,1.5vw,16px);color:#4a5775;font-weight:600;margin-bottom:clamp(16px,2vw,24px);font-size:clamp(13px,1.5vw,16px)}
+.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(150px,30vw,220px),1fr));gap:clamp(14px,2vw,22px)}
+.ch-card{border:0;cursor:pointer;font-family:inherit;border-radius:24px;padding:clamp(20px,2.6vw,32px);display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 12px 30px rgba(37,75,131,.16);transition:transform .18s,box-shadow .18s;min-block-size:clamp(150px,20vw,200px);justify-content:center}
+.ch-basic{background:linear-gradient(160deg,#f5d9b0,#d99a5c)}
+.ch-silver{background:linear-gradient(160deg,#e8eef3,#b5c2d0)}
+.ch-gold{background:linear-gradient(160deg,#ffe79a,#f3b73f)}
+.ch-secret{background:linear-gradient(160deg,#d6c3ff,#9a78f0)}
+.ch-card:hover:not(:disabled){transform:translateY(-5px) scale(1.03);box-shadow:0 18px 38px rgba(37,75,131,.24)}
+.ch-card:disabled{cursor:default}
+.ch-emoji{font-size:clamp(44px,7vw,72px);line-height:1;transition:transform .3s}
+.ch-card.open .ch-emoji{animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(.4) rotate(-12deg)}60%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+.ch-title{font-family:var(--font-display,system-ui);font-weight:800;color:#3a2a10;font-size:clamp(15px,1.8vw,20px);text-align:center;line-height:1.1}
+.ch-secret .ch-title{color:#3a2060}
+.ch-hint{color:rgba(60,50,30,.6);font-weight:600;font-size:clamp(11px,1.3vw,14px)}
+.ch-reward{background:rgba(255,255,255,.85);border-radius:12px;padding:8px 14px;font-weight:800;color:#2fad50;font-size:clamp(12px,1.4vw,16px);text-align:center;animation:fade .4s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
