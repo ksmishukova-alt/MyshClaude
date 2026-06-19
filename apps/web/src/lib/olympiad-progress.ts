@@ -9,8 +9,15 @@
  *    откат на уровень ниже → уведомление методисту.
  */
 
-import type { OlympiadLevel, OlympiadProblemV2, ThemeProgress } from "@/types/olympiad";
-import { OLYMPIAD_LEVELS } from "@/types/olympiad";
+import type {
+  OlympiadLevel,
+  OlympiadProblemV2,
+  ThemeProgress,
+  OlympiadStepResult,
+  OlympiadAttemptStatus,
+  ReasoningCompleteness,
+} from "@/types/olympiad";
+import { OLYMPIAD_LEVELS, LEVEL_SPECS, meetsCompleteness } from "@/types/olympiad";
 
 /** Попыток на задачу (как в Daily). */
 export const MAX_ATTEMPTS = 3;
@@ -46,11 +53,87 @@ export type ProgressEvent =
   | "solved"
   | "promoted"
   | "mastered"
-  | "rolledBack";
+  | "rolledBack"
+  | "needsReasoningRevision"
+  | "pendingReview";
+
+// ─────────────────────────────────────────────────────────────
+// Честный «чистый» зачёт (ТЗ §4)
+// ─────────────────────────────────────────────────────────────
+
+/** Сводка по шагам — для определения «чистоты» попытки и аналитики. */
+export interface StepsSummary {
+  hintsUsed: number;
+  anyStepError: boolean;
+  totalStepAttempts: number;
+  errorCodes: string[];
+  /** Были ошибки на шагах, но в итоге все верны и без подсказок. */
+  selfCorrection: boolean;
+}
+
+export function summarizeSteps(steps: OlympiadStepResult[]): StepsSummary {
+  let hintsUsed = 0;
+  let anyStepError = false;
+  let totalStepAttempts = 0;
+  let anyHint = false;
+  let allCorrect = steps.length > 0;
+  const errorCodes: string[] = [];
+  for (const s of steps) {
+    if (s.hintUsed) {
+      hintsUsed += 1;
+      anyHint = true;
+    }
+    if (s.hadError) anyStepError = true;
+    totalStepAttempts += s.attempts;
+    if (s.errorCodes?.length) errorCodes.push(...s.errorCodes);
+    if (!s.correct) allCorrect = false;
+  }
+  return {
+    hintsUsed,
+    anyStepError,
+    totalStepAttempts,
+    errorCodes,
+    selfCorrection: anyStepError && allCorrect && !anyHint,
+  };
+}
+
+export interface AttemptFacts {
+  level: OlympiadLevel;
+  finalAnswerCorrect: boolean;
+  /** Финальный ответ исчерпал MAX_ATTEMPTS и так и не верен. */
+  attemptsExhausted: boolean;
+  hintsUsed: number;
+  anyStepError: boolean;
+  reasoningCompleteness: ReasoningCompleteness;
+}
+
+/**
+ * Определить статус попытки по правилам уровня (ТЗ §1, §4).
+ *  - L5 (manualReview) → всегда pendingReview (ждёт методиста).
+ *  - ответ неверный и попытки исчерпаны → failed.
+ *  - ответ верный, но полнота ниже порога уровня → needs_reasoning_revision.
+ *  - ответ верный, но были подсказки/ошибки на шагах → completed_with_hint.
+ *  - ответ верный, без подсказок и ошибок, полнота ок → completed (ЧИСТО).
+ */
+export function computeAttemptStatus(f: AttemptFacts): OlympiadAttemptStatus {
+  const spec = LEVEL_SPECS[f.level];
+  if (spec.manualReview) return "pendingReview";
+  if (!f.finalAnswerCorrect) return f.attemptsExhausted ? "failed" : "inProgress";
+  if (!meetsCompleteness(f.reasoningCompleteness, spec.minCleanCompleteness)) {
+    return "needs_reasoning_revision";
+  }
+  if (f.hintsUsed > 0 || f.anyStepError) return "completed_with_hint";
+  return "completed";
+}
+
+/** «Чистый» зачёт = решено верно, без подсказок и ошибок, с полной записью. */
+export function isCleanStatus(s: OlympiadAttemptStatus): boolean {
+  return s === "completed";
+}
 
 export interface ResultInput {
-  /** Решено ли верно (для ручных L5 — оптимистично true до проверки методиста). */
-  correct: boolean;
+  /** Статус попытки (см. computeAttemptStatus). */
+  status: OlympiadAttemptStatus;
   /** Целевой уровень мастерства темы (для значка). */
   masteryLevel: OlympiadLevel;
   /** Уровни, заведённые у темы. */
@@ -66,7 +149,8 @@ export interface ResultOutput {
 
 /**
  * Применить результат одной задачи к прогрессу темы.
- * Реализует авто-перевод (4 подряд), откат (2 провала подряд) и значок мастерства.
+ * Авто-перевод (4 ЧИСТЫХ подряд), откат (2 провала подряд), значок мастерства.
+ * «Верно, но не чисто» (подсказка/ошибка/неполная запись) НЕ входит в clean-серию.
  */
 export function applyResult(
   progress: ThemeProgress,
@@ -74,11 +158,18 @@ export function applyResult(
   input: ResultInput,
 ): ResultOutput {
   const p: ThemeProgress = { ...progress };
+  const { status } = input;
 
-  if (!input.correct) {
+  // L5: ждёт проверки методиста — прогресс не двигаем автоматически.
+  if (status === "pendingReview") {
+    p.solvedAtLevel += 1;
+    return { progress: p, event: "pendingReview", notifyMethodist: false };
+  }
+
+  // Провал: серия сброшена, считаем подряд-провалы → каскад отката.
+  if (status === "failed") {
     p.streak = 0;
     p.consecutiveFails += 1;
-    // Каскад: после ROLLBACK_FAILS провалов — откат на уровень ниже + сигнал методисту.
     if (p.consecutiveFails >= ROLLBACK_FAILS) {
       const below = prevLevel(p.currentLevel);
       if (below && input.availableLevels.includes(below)) {
@@ -88,19 +179,29 @@ export function applyResult(
         p.state = "inProgress";
         return { progress: p, event: "rolledBack", notifyMethodist: true };
       }
-      // Откатываться некуда (уже L1) — всё равно сигналим методисту о застревании.
       return { progress: p, event: "none", notifyMethodist: true };
     }
     return { progress: p, event: "none", notifyMethodist: false };
   }
 
-  // Верно:
+  // Ответ верный (чисто или с помощью): начисляем звёзды и засчитываем решение.
   p.stars += rewardStars;
   p.solvedAtLevel += 1;
   p.consecutiveFails = 0;
-  p.streak += 1;
   if (p.state === "open" || p.state === "locked") p.state = "inProgress";
 
+  // Верно, но НЕ чисто → серия сбрасывается, повышения нет.
+  if (!isCleanStatus(status)) {
+    p.streak = 0;
+    return {
+      progress: p,
+      event: status === "needs_reasoning_revision" ? "needsReasoningRevision" : "solved",
+      notifyMethodist: false,
+    };
+  }
+
+  // Чисто → наращиваем clean-серию.
+  p.streak += 1;
   if (p.streak >= PROMOTE_STREAK) {
     const up = nextLevel(p.currentLevel);
     const masteryReached =
@@ -115,7 +216,6 @@ export function applyResult(
       p.solvedAtLevel = 0;
       return { progress: p, event: masteryReached ? "mastered" : "promoted", notifyMethodist: false };
     }
-    // Выше некуда — тема пройдена до потолка.
     p.badgeEarned = true;
     p.state = "mastered";
     return { progress: p, event: "mastered", notifyMethodist: false };

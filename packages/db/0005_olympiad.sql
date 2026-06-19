@@ -50,17 +50,57 @@ create table if not exists child_theme_progress (
   primary key (child_id, theme_id)
 );
 
+-- Попытка олимпиадного задания (ТЗ §1) — храним ВСЮ структуру решения, а не только
+-- правильность: запись 5 частей, шаги (jsonb), подсказки, ошибки, самоисправление,
+-- полнота и статус. Методист/отчёт видят, КАК ребёнок думал.
 create table if not exists olympiad_attempts (
   id uuid primary key default gen_random_uuid(),
   child_id uuid not null references child_profiles(id) on delete cascade,
   problem_id text not null,
   theme_id text not null,
   level olympiad_level not null,
+  recording_format text,
+  -- запись решения (5 частей)
+  selected_data text,
+  solution_plan text,
+  solution_steps text,
+  reasoning_text text,
+  final_answer text,
+  -- структура шагов: [{stepId,value,actionKind,explanation,attempts,hintUsed,hadError,correct,errorCodes}]
+  steps jsonb not null default '[]'::jsonb,
+  hints_used int not null default 0,
+  attempts int not null default 1,
+  error_codes jsonb not null default '[]'::jsonb,
+  self_correction bool not null default false,
+  reasoning_completeness text not null default 'notChecked',
+  status text not null default 'inProgress',
+  final_answer_correct bool,
+  uploaded_solution_urls jsonb not null default '[]'::jsonb,
+  reward_stars int not null default 0,
+  -- обратная совместимость со старой схемой:
   is_correct bool,
   attempts_used int not null default 1,
   uploaded_solution_url text,
   created_at timestamptz not null default now()
 );
+-- Апгрейд существующей таблицы (если она была создана по старой схеме):
+alter table olympiad_attempts add column if not exists recording_format text;
+alter table olympiad_attempts add column if not exists selected_data text;
+alter table olympiad_attempts add column if not exists solution_plan text;
+alter table olympiad_attempts add column if not exists solution_steps text;
+alter table olympiad_attempts add column if not exists reasoning_text text;
+alter table olympiad_attempts add column if not exists final_answer text;
+alter table olympiad_attempts add column if not exists steps jsonb not null default '[]'::jsonb;
+alter table olympiad_attempts add column if not exists hints_used int not null default 0;
+alter table olympiad_attempts add column if not exists attempts int not null default 1;
+alter table olympiad_attempts add column if not exists error_codes jsonb not null default '[]'::jsonb;
+alter table olympiad_attempts add column if not exists self_correction bool not null default false;
+alter table olympiad_attempts add column if not exists reasoning_completeness text not null default 'notChecked';
+alter table olympiad_attempts add column if not exists status text not null default 'inProgress';
+alter table olympiad_attempts add column if not exists final_answer_correct bool;
+alter table olympiad_attempts add column if not exists uploaded_solution_urls jsonb not null default '[]'::jsonb;
+alter table olympiad_attempts add column if not exists reward_stars int not null default 0;
+create index if not exists olympiad_attempts_child on olympiad_attempts (child_id, created_at desc);
 
 insert into olympiad_themes (id, ord, title, mastery_level, depends_on, data) values
  ('logic', 1, 'Логика', 'L2', '{}', '{"id":"logic","title":"Логика","blurb":"Рыцари и лжецы, истина и ложь, рассуждение от противного.","icon":"🧩","dependsOn":[],"levels":["L1","L2","L5"],"masteryLevel":"L2","skillTags":["логика","от противного"]}'),

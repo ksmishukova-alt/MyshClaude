@@ -1,24 +1,27 @@
 "use client";
 
 /**
- * Экран темы: ОБЗОР (макет: герой + прогресс + карточки уровней + награда)
- * и РЕШЕНИЕ (поток задач с прогрессией).
+ * Экран темы: ОБЗОР (тема + объяснение метода + прогресс + L1–L5 + награда + «Продолжить»)
+ * и РЕШЕНИЕ (поток задач с честной прогрессией).
  *
- * Прогрессия:
- *  - 3 попытки на задачу (в раннере), нарастающие подсказки.
- *  - 4 верных подряд → авто-перевод на уровень выше (баннер).
- *  - 2 провала подряд → откат уровня + уведомление методисту (стаб TG).
- *  - Значок за достижение целевого уровня темы.
+ *  - «Смотреть объяснение» показывает мини-метод темы и НЕ запускает задачу (ТЗ §7).
+ *  - «Продолжить» / карточка уровня запускают прохождение.
+ *  - Прогрессия по статусам попытки (ТЗ §4): clean-серия из 4 → уровень выше;
+ *    «верно, но не чисто» серию сбрасывает; 2 провала подряд → откат + сигнал методисту.
  *
- * Прогресс на пилоте — клиентский (seed из мок-слоя).
- * SEAM ДЛЯ БД: заменить initialProgress на загрузку по childId и
- * persistProgress() — на запись в репозиторий (см. lib/data.ts как образец).
+ * Прогресс на пилоте — клиентский (seed из мок/БД), запись попытки уходит в /api/olympiad/progress.
  */
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { OlympiadTheme, ThemeProgress, OlympiadLevel, OlympiadProblemV2 } from "@/types/olympiad";
+import type {
+  OlympiadTheme,
+  ThemeProgress,
+  OlympiadLevel,
+  OlympiadProblemV2,
+  OlympiadTaskAttempt,
+} from "@/types/olympiad";
 import { LEVEL_SPECS, LEVEL_UI, OLYMPIAD_LEVELS } from "@/types/olympiad";
 import { applyResult, PROBLEMS_PER_LEVEL, type ProgressEvent } from "@/lib/olympiad-progress";
 import { OlympiadRunner } from "@/components/olympiad/OlympiadRunner";
@@ -30,43 +33,38 @@ export function ThemePlay({
 }: {
   theme: OlympiadTheme;
   initialProgress: ThemeProgress;
-  /** Задачи темы по уровням (из БД или мок-слоя — приходят пропом со страницы). */
   problemsByLevel: Record<string, OlympiadProblemV2[]>;
 }) {
   const router = useRouter();
   const [progress, setProgress] = useState<ThemeProgress>(initialProgress);
   const [view, setView] = useState<"overview" | "play">("overview");
+  const [showMethod, setShowMethod] = useState(false);
   const [problemSeq, setProblemSeq] = useState(0);
   const [banner, setBanner] = useState<{ event: ProgressEvent; notify: boolean } | null>(null);
   const [completed, setCompleted] = useState(false);
 
-  // Сохранение прогресса: пишет в БД через API (если Supabase настроен; иначе no-op на сервере).
-  function persistProgress(p: ThemeProgress, attempt?: { problemId: string; isCorrect: boolean | null; attemptsUsed: number }) {
+  function persistProgress(p: ThemeProgress, attempt?: OlympiadTaskAttempt) {
     void fetch("/api/olympiad/progress", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        progress: p,
-        attempt: attempt ? { ...attempt, level: p.currentLevel } : undefined,
-      }),
+      body: JSON.stringify({ progress: p, attempt }),
     }).catch(() => {});
   }
 
   const themeLevels = OLYMPIAD_LEVELS.filter((l) => theme.levels.includes(l));
   const curIdx = OLYMPIAD_LEVELS.indexOf(progress.currentLevel);
 
-  /** Кол-во задач уровня и сколько «решено» (для карточек). */
+  /** Кол-во задач уровня и сколько «решено» (для карточек). Счётчик — реальный. */
   function levelStats(l: OlympiadLevel) {
-    const total = Math.max(problemsByLevel[l]?.length ?? 0, PROBLEMS_PER_LEVEL);
+    const total = problemsByLevel[l]?.length ?? 0;
     const idx = OLYMPIAD_LEVELS.indexOf(l);
     let done = 0;
     let state: "passed" | "current" | "locked" = "locked";
     if (idx < curIdx) { done = total; state = "passed"; }
-    else if (idx === curIdx) { done = progress.solvedAtLevel; state = "current"; }
+    else if (idx === curIdx) { done = Math.min(progress.solvedAtLevel, total || PROBLEMS_PER_LEVEL); state = "current"; }
     return { total, done, state };
   }
 
-  // суммарный прогресс по теме (для карточки «Прогресс темы»)
   const totals = useMemo(() => {
     let total = 0;
     let done = 0;
@@ -77,7 +75,7 @@ export function ThemePlay({
     }
     return { total, done, inWork: progress.solvedAtLevel > 0 ? Math.min(2, progress.streak || 1) : 0 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progress, theme.id]);
+  }, [progress, theme.id, problemsByLevel]);
 
   const levelProblems = useMemo(
     () => problemsByLevel[progress.currentLevel] ?? [],
@@ -89,20 +87,18 @@ export function ThemePlay({
   function startLevel() {
     setBanner(null);
     setCompleted(false);
+    setShowMethod(false);
     setView("play");
   }
 
-  function onComplete(correct: boolean, attemptsUsed?: number) {
-    const res = applyResult(progress, problem?.rewardStars ?? 0, {
-      correct,
+  function onComplete(attempt: OlympiadTaskAttempt) {
+    const res = applyResult(progress, attempt.rewardStars, {
+      status: attempt.status,
       masteryLevel: theme.masteryLevel,
       availableLevels: theme.levels,
     });
     setProgress(res.progress);
-    persistProgress(
-      res.progress,
-      problem ? { problemId: problem.id, isCorrect: correct, attemptsUsed: attemptsUsed ?? 1 } : undefined,
-    );
+    persistProgress(res.progress, attempt);
     setCompleted(true);
     if (res.notifyMethodist) notifyMethodist(theme, res.progress);
     if (res.event !== "none" && res.event !== "solved") setBanner({ event: res.event, notify: res.notifyMethodist });
@@ -148,6 +144,8 @@ export function ThemePlay({
               {banner.event === "promoted" && (<>🚀 <b>Новый уровень!</b> Ты поднялся на {progress.currentLevel}. Задачи станут самостоятельнее.</>)}
               {banner.event === "mastered" && (<>🏅 <b>Тема освоена!</b> Значок «{theme.title}» твой. Можно идти дальше по карте.</>)}
               {banner.event === "rolledBack" && (<>↩️ <b>Вернёмся на шаг назад</b> — на {progress.currentLevel}. Закрепим метод. Методисту ушёл сигнал.</>)}
+              {banner.event === "needsReasoningRevision" && (<>✍️ <b>Ответ верный — допиши решение.</b> Запиши рассуждение подробнее, чтобы засчитать «чисто». Серия начинается заново.</>)}
+              {banner.event === "pendingReview" && (<>📨 <b>Отправлено методисту.</b> Листочек на проверке — уровень обновится после подтверждения.</>)}
               {banner.event === "none" && banner.notify && (<>🤝 Похоже, задача застряла. Методисту ушёл сигнал — скоро помогут.</>)}
               <button className="olr-cta sm" onClick={nextProblem}>Следующая задача →</button>
             </div>
@@ -172,8 +170,9 @@ export function ThemePlay({
     );
   }
 
-  // ── ВИД: ОБЗОР (макет) ──
+  // ── ВИД: ОБЗОР ──
   const pct = totals.total ? Math.round((totals.done / totals.total) * 100) : 0;
+  const method = theme.method;
   return (
     <main className="top-stage" aria-label={`Тема: ${theme.title}`}>
       <div className="top-wrap thm-wrap">
@@ -182,16 +181,16 @@ export function ThemePlay({
         </header>
 
         <div className="thm-grid">
-          {/* Герой */}
           <section className="thm-hero">
             <span className="thm-pill">🏆 Тема олимпиады</span>
             <h1 className="thm-title">{theme.title}</h1>
             <p className="thm-blurb">{theme.blurb}</p>
-            <button className="thm-explain" onClick={startLevel}>▶ Смотреть объяснение</button>
+            <button className="thm-explain" onClick={() => setShowMethod((v) => !v)}>
+              ▶ {showMethod ? "Скрыть объяснение" : "Смотреть объяснение"}
+            </button>
             <div className="thm-mascot" aria-hidden />
           </section>
 
-          {/* Прогресс темы */}
           <aside className="thm-progress">
             <h2>Прогресс темы</h2>
             <div className="thm-prog-big">{totals.done} из {totals.total} заданий</div>
@@ -204,20 +203,32 @@ export function ThemePlay({
           </aside>
         </div>
 
-        {/* Карточки уровней + награда */}
+        {/* Объяснение метода темы — отдельно от подсказок, не запускает задачу (ТЗ §7) */}
+        {showMethod && (
+          <div className="thm-method">
+            <h2>{method?.title ?? "Как решать задачи этой темы"}</h2>
+            {method ? (
+              <>
+                <p className="thm-method-intro">{method.intro}</p>
+                <ol className="thm-method-steps">
+                  {method.steps.map((s, i) => <li key={i}>{s}</li>)}
+                </ol>
+                {method.example && <div className="thm-method-ex">Пример: {method.example}</div>}
+              </>
+            ) : (
+              <p className="thm-method-intro">{theme.blurb}</p>
+            )}
+            <button className="thm-explain" onClick={startLevel}>Понятно, начать →</button>
+          </div>
+        )}
+
         <div className="thm-levels">
           {themeLevels.map((l) => {
             const s = levelStats(l);
             const ui = LEVEL_UI[l];
             const locked = s.state === "locked";
             return (
-              <button
-                key={l}
-                className={`thm-lvl ${ui.color} ${s.state}`}
-                disabled={locked}
-                onClick={startLevel}
-                title={LEVEL_SPECS[l].tagline}
-              >
+              <button key={l} className={`thm-lvl ${ui.color} ${s.state}`} disabled={locked} onClick={startLevel} title={LEVEL_SPECS[l].tagline}>
                 <span className={`thm-lvl-badge ${ui.color}`}>{l}{locked && <i className="thm-lvl-lock">🔒</i>}</span>
                 <span className="thm-lvl-name">{ui.name}</span>
                 <span className="thm-lvl-desc">{LEVEL_SPECS[l].tagline}</span>
@@ -228,7 +239,6 @@ export function ThemePlay({
             );
           })}
 
-          {/* Награда темы */}
           <div className={`thm-reward ${progress.badgeEarned ? "earned" : ""}`}>
             <span className="thm-reward-cap">Награда темы</span>
             <div className="thm-reward-badge" aria-hidden>🏅</div>
@@ -237,7 +247,6 @@ export function ThemePlay({
           </div>
         </div>
 
-        {/* Нижний CTA */}
         <div className="thm-bottom">
           <button className="thm-continue" onClick={startLevel}>Продолжить 🚀</button>
           <button className="thm-fav" onClick={() => router.push("/topics")}>🔖 К карте тем</button>

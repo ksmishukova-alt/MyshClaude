@@ -4,6 +4,7 @@ import type {
   OlympiadProblemV2,
   OlympiadLevel,
   ThemeProgress,
+  OlympiadTaskAttempt,
 } from "@/types/olympiad";
 
 /**
@@ -20,7 +21,8 @@ export async function getThemesDb(): Promise<OlympiadTheme[] | null> {
     .from("olympiad_themes")
     .select("data")
     .order("ord");
-  if (error || !data) return null;
+  // Пусто/ошибка → откат на мок-контент (БД ещё не засеяна олимпиадой).
+  if (error || !data || data.length === 0) return null;
   return data.map((r) => r.data as OlympiadTheme);
 }
 
@@ -50,7 +52,7 @@ export async function getProblemsByThemeDb(
     .eq("theme_id", themeId)
     .order("level")
     .order("ord");
-  if (error || !data) return null;
+  if (error || !data || data.length === 0) return null;
   const byLevel: Record<string, OlympiadProblemV2[]> = {};
   for (const row of data) {
     const lvl = row.level as string;
@@ -143,23 +145,40 @@ export async function saveThemeProgressDb(
   return !error;
 }
 
-/** Лог попытки олимпиадной задачи (аналитика методиста). */
-export async function logOlympiadAttemptDb(args: {
-  childId: string;
-  problemId: string;
-  themeId: string;
-  level: OlympiadLevel;
-  isCorrect: boolean | null;
-  attemptsUsed: number;
-}): Promise<void> {
+/**
+ * Сохранить ПОЛНУЮ попытку олимпиадного задания (ТЗ §1) — со структурой решения,
+ * шагами, подсказками, ошибками, полнотой и статусом. Это то, что видит методист.
+ */
+export async function saveOlympiadAttemptDb(
+  childId: string,
+  a: OlympiadTaskAttempt,
+): Promise<boolean> {
   const sb = getSupabase();
-  if (!sb) return;
-  await sb.from("olympiad_attempts").insert({
-    child_id: args.childId,
-    problem_id: args.problemId,
-    theme_id: args.themeId,
-    level: args.level,
-    is_correct: args.isCorrect,
-    attempts_used: args.attemptsUsed,
+  if (!sb) return false;
+  const { error } = await sb.from("olympiad_attempts").insert({
+    child_id: childId,
+    problem_id: a.problemId,
+    theme_id: a.themeId,
+    level: a.level,
+    recording_format: a.recordingFormat,
+    selected_data: a.selectedData,
+    solution_plan: a.solutionPlan,
+    solution_steps: a.solutionSteps,
+    reasoning_text: a.reasoningText,
+    final_answer: a.finalAnswer,
+    steps: a.steps,
+    hints_used: a.hintsUsed,
+    attempts: a.attempts,
+    error_codes: a.errorCodes,
+    self_correction: a.selfCorrection,
+    reasoning_completeness: a.reasoningCompleteness,
+    status: a.status,
+    final_answer_correct: a.finalAnswerCorrect,
+    uploaded_solution_urls: a.uploadedSolutionUrls ?? [],
+    reward_stars: a.rewardStars,
+    // обратная совместимость
+    is_correct: a.finalAnswerCorrect,
+    attempts_used: a.attempts,
   });
+  return !error;
 }

@@ -55,6 +55,14 @@ export interface LevelSpec {
   autonomy: number;
   /** Нужна ли ручная проверка методиста (фото листочка / письменное). */
   manualReview: boolean;
+  /** Формат записи решения на уровне (ТЗ §5). Постепенно снимает поддержку. */
+  recordingFormat: RecordingFormat;
+  /**
+   * Минимальная полнота записи решения для «чистого» зачёта на уровне (ТЗ §4).
+   * Если финальный ответ верный, но полнота ниже этого порога —
+   * статус needs_reasoning_revision, и задача НЕ входит в clean-серию.
+   */
+  minCleanCompleteness: ReasoningCompleteness;
 }
 
 export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
@@ -66,6 +74,8 @@ export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
     hintPolicy: "many",
     autonomy: 0.1,
     manualReview: false,
+    recordingFormat: "solution_fill_blanks",
+    minCleanCompleteness: "partial",
   },
   L2: {
     id: "L2",
@@ -75,6 +85,8 @@ export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
     hintPolicy: "some",
     autonomy: 0.3,
     manualReview: false,
+    recordingFormat: "solution_plan_builder",
+    minCleanCompleteness: "partial",
   },
   L3: {
     id: "L3",
@@ -84,6 +96,8 @@ export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
     hintPolicy: "minimal",
     autonomy: 0.55,
     manualReview: false,
+    recordingFormat: "reasoning_text_builder",
+    minCleanCompleteness: "complete",
   },
   L4: {
     id: "L4",
@@ -93,6 +107,8 @@ export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
     hintPolicy: "none",
     autonomy: 0.8,
     manualReview: false,
+    recordingFormat: "action_explanation_choice",
+    minCleanCompleteness: "complete",
   },
   L5: {
     id: "L5",
@@ -102,6 +118,8 @@ export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
     hintPolicy: "none",
     autonomy: 1,
     manualReview: true,
+    recordingFormat: "full_written_solution",
+    minCleanCompleteness: "complete",
   },
   L6: {
     id: "L6",
@@ -111,6 +129,8 @@ export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
     hintPolicy: "none",
     autonomy: 1,
     manualReview: false,
+    recordingFormat: "full_written_solution",
+    minCleanCompleteness: "complete",
   },
 };
 
@@ -182,6 +202,19 @@ export interface OlympiadStep {
   actionKindOptions?: string[];
   /** Правильный тип действия. */
   actionKind?: string;
+  /**
+   * L4 (action_explanation_choice): варианты короткого объяснения «почему так».
+   * Ребёнок выбирает корректное объяснение действия. correct помечает верное.
+   */
+  explainOptions?: OlympiadStepOption[];
+  /**
+   * Часть записи решения, которую наполняет ответ этого шага.
+   * Позволяет собрать запись решения (selectedData/plan/steps/reasoning/answer)
+   * из шагов на ведомых уровнях. По умолчанию — solutionSteps.
+   */
+  recordField?: SolutionField;
+  /** Подпись «пропуска» для L1 (solution_fill_blanks), напр. «Если бы все были змеями, ног =». */
+  blankLabel?: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -214,6 +247,24 @@ export interface OlympiadProblemV2 {
    * У L5 (листочек) и L6 (алгебра) может отсутствовать.
    */
   steps?: OlympiadStep[];
+  /**
+   * РАЗБОР (ТЗ §6) — показывается ПОСЛЕ завершения/провала, отдельно от подсказок.
+   * Подсказки помогают думать до ответа; разбор учит оформлять решение после.
+   */
+  breakdown?: OlympiadBreakdown;
+}
+
+/**
+ * Разбор задачи (worked solution). Структура по ТЗ §6:
+ * что известно → идея → шаги → запись решения → ответ → проверка себя.
+ */
+export interface OlympiadBreakdown {
+  known: string;
+  idea: string;
+  steps: string[];
+  writtenSolution: string;
+  answer: string;
+  selfCheck: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -234,6 +285,24 @@ export interface OlympiadTheme {
   /** Целевой уровень для значка «тема приручена». */
   masteryLevel: OlympiadLevel;
   skillTags: string[];
+  /**
+   * Мини-объяснение метода темы (ТЗ §7). Показывается по кнопке «Смотреть объяснение»
+   * на экране темы — НЕ запускает задачу. Напр. для «Головы и ноги»:
+   * «все одного вида → сравни → шаг замены → ответ».
+   */
+  method?: OlympiadMethod;
+}
+
+/** Объяснение метода темы для экрана «Смотреть объяснение» (ТЗ §7). */
+export interface OlympiadMethod {
+  /** Заголовок метода, напр. «Метод предположения». */
+  title: string;
+  /** Короткое вступление. */
+  intro: string;
+  /** Шаги метода в общем виде (без конкретных чисел). */
+  steps: string[];
+  /** Маленький пример «на пальцах». */
+  example?: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -257,4 +326,130 @@ export interface ThemeProgress {
   /** Получен ли значок (тема пройдена до masteryLevel). */
   badgeEarned: boolean;
   state: ThemeState;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Запись решения и попытка олимпиадного задания (ТЗ §1, §9)
+// ─────────────────────────────────────────────────────────────
+
+/** Пять частей записи решения. Ценится ход мысли, а не только ответ. */
+export interface OlympiadSolutionRecord {
+  selectedData: string; // что дано / что известно
+  solutionPlan: string; // план решения
+  solutionSteps: string; // шаги / вычисления
+  reasoningText: string; // рассуждение «почему так»
+  finalAnswer: string; // итоговый ответ
+}
+
+export type SolutionField = keyof OlympiadSolutionRecord;
+
+export const SOLUTION_FIELD_LABELS: Record<SolutionField, string> = {
+  selectedData: "Что дано",
+  solutionPlan: "План",
+  solutionSteps: "Шаги решения",
+  reasoningText: "Рассуждение",
+  finalAnswer: "Ответ",
+};
+
+/** Формат записи решения по уровням (ТЗ §5) — постепенно снимает поддержку. */
+export type RecordingFormat =
+  | "solution_fill_blanks" // L1: заполнить ключевые части по шаблону
+  | "solution_plan_builder" // L2: план + шаги с сильной опорой
+  | "reasoning_text_builder" // L3: сам собирает план и дописывает объяснение
+  | "action_explanation_choice" // L4: действие → выражение → короткое «почему»
+  | "full_written_solution"; // L5: фото листочка + ответ + проверка методиста
+
+/** Полнота записи решения (ТЗ §1, §4). */
+export type ReasoningCompleteness = "notChecked" | "incomplete" | "partial" | "complete";
+
+export const COMPLETENESS_RANK: Record<ReasoningCompleteness, number> = {
+  notChecked: 0,
+  incomplete: 1,
+  partial: 2,
+  complete: 3,
+};
+
+/** Достигнута ли минимальная полнота уровня. */
+export function meetsCompleteness(actual: ReasoningCompleteness, min: ReasoningCompleteness): boolean {
+  return COMPLETENESS_RANK[actual] >= COMPLETENESS_RANK[min];
+}
+
+/** Какие части записи обязательны для каждого формата (для оценки полноты). */
+export const REQUIRED_FIELDS: Record<RecordingFormat, SolutionField[]> = {
+  solution_fill_blanks: ["solutionSteps", "finalAnswer"],
+  solution_plan_builder: ["solutionPlan", "solutionSteps", "finalAnswer"],
+  reasoning_text_builder: ["solutionPlan", "solutionSteps", "reasoningText", "finalAnswer"],
+  action_explanation_choice: ["solutionSteps", "reasoningText", "finalAnswer"],
+  full_written_solution: ["finalAnswer"], // остальное на листочке → проверяет методист
+};
+
+/** Оценить полноту записи решения по заполненным обязательным частям формата. */
+export function computeReasoningCompleteness(
+  rec: OlympiadSolutionRecord,
+  format: RecordingFormat,
+): ReasoningCompleteness {
+  if (format === "full_written_solution") return "notChecked"; // структуру оценивает методист
+  const req = REQUIRED_FIELDS[format];
+  const filled = req.filter((f) => (rec[f] ?? "").trim().length > 0).length;
+  if (filled === 0) return "incomplete";
+  if (filled >= req.length) return "complete";
+  return filled / req.length >= 0.5 ? "partial" : "incomplete";
+}
+
+/** Статус попытки (ТЗ §1). */
+export type OlympiadAttemptStatus =
+  | "inProgress"
+  | "completed" // решено верно, запись полная, без подсказок
+  | "completed_with_hint" // решено верно, но с подсказкой
+  | "needs_reasoning_revision" // ответ верный, но запись решения неполная
+  | "failed" // не решено в рамках попыток
+  | "pendingReview"; // L5: ушло методисту (фото листочка)
+
+/** Результат одного шага решения (ТЗ §2) — ничего не теряем. */
+export interface OlympiadStepResult {
+  stepId: string;
+  /** Что ввёл/выбрал ребёнок (текст, число, выражение, id варианта, порядок через запятую). */
+  value: string;
+  /** L4: выбранный тип действия. */
+  actionKind?: string;
+  /** L4: короткое объяснение «почему» (или id выбранного объяснения). */
+  explanation?: string;
+  attempts: number;
+  hintUsed: boolean;
+  /** Была ли хотя бы одна неверная попытка на этом шаге. */
+  hadError: boolean;
+  /** Решено в итоге верно. */
+  correct: boolean;
+  /** Коды ошибок шага (напр. wrong_action_kind, wrong_value, wrong_order). */
+  errorCodes?: string[];
+}
+
+/**
+ * Полная попытка олимпиадного задания (ТЗ §1).
+ * Сохраняется в БД — методист/отчёт видят, КАК ребёнок думал, а не только верность.
+ */
+export interface OlympiadTaskAttempt {
+  problemId: string;
+  themeId: string;
+  level: OlympiadLevel;
+  recordingFormat: RecordingFormat;
+  // запись решения (5 частей)
+  selectedData: string;
+  solutionPlan: string;
+  solutionSteps: string;
+  reasoningText: string;
+  finalAnswer: string;
+  // структура шагов
+  steps: OlympiadStepResult[];
+  // агрегаты
+  hintsUsed: number;
+  attempts: number; // суммарно попыток по задаче (шаги + финальный ответ)
+  errorCodes: string[];
+  selfCorrection: boolean; // были ошибки, но в итоге исправил сам, без подсказки
+  reasoningCompleteness: ReasoningCompleteness;
+  status: OlympiadAttemptStatus;
+  finalAnswerCorrect: boolean;
+  /** L5: до 3 фото листочка. */
+  uploadedSolutionUrls?: string[];
+  rewardStars: number;
 }

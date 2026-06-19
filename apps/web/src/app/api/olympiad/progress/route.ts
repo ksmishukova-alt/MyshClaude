@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
 import { getCurrentChildId } from "@/lib/session";
-import { saveThemeProgressDb, logOlympiadAttemptDb } from "@/lib/olympiad-db";
-import type { ThemeProgress, OlympiadLevel } from "@/types/olympiad";
+import { saveThemeProgressDb, saveOlympiadAttemptDb } from "@/lib/olympiad-db";
+import type { ThemeProgress, OlympiadTaskAttempt } from "@/types/olympiad";
 
 /**
  * POST /api/olympiad/progress
- * Тело: { progress: ThemeProgress, attempt?: { problemId, level, isCorrect, attemptsUsed } }
+ * Тело: { progress?: ThemeProgress, attempt?: OlympiadTaskAttempt }
  *
- * Сохраняет прогресс ребёнка по теме и (опц.) логирует попытку для аналитики.
- * childId берётся из cookie сессии. Если Supabase не настроен — no-op (ok:true).
+ * Сохраняет прогресс ребёнка по теме и ПОЛНУЮ попытку (структура решения, шаги,
+ * подсказки, ошибки, полнота, статус — ТЗ §1). childId берётся из cookie сессии.
+ * Если Supabase не настроен — no-op (фронт работает на моках, это нормально).
  */
 export async function POST(req: Request) {
-  let body: {
-    progress?: ThemeProgress;
-    attempt?: { problemId: string; level: OlympiadLevel; isCorrect: boolean | null; attemptsUsed: number };
-  };
+  let body: { progress?: ThemeProgress; attempt?: OlympiadTaskAttempt };
   try {
     body = await req.json();
   } catch {
@@ -22,18 +20,8 @@ export async function POST(req: Request) {
   }
 
   const childId = await getCurrentChildId();
-  if (body.progress) {
-    await saveThemeProgressDb(childId, body.progress);
-    if (body.attempt) {
-      await logOlympiadAttemptDb({
-        childId,
-        themeId: body.progress.themeId,
-        problemId: body.attempt.problemId,
-        level: body.attempt.level,
-        isCorrect: body.attempt.isCorrect,
-        attemptsUsed: body.attempt.attemptsUsed,
-      });
-    }
-  }
+  if (body.progress) await saveThemeProgressDb(childId, body.progress);
+  if (body.attempt) await saveOlympiadAttemptDb(childId, body.attempt);
+
   return NextResponse.json({ ok: true });
 }
