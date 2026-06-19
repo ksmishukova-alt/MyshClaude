@@ -156,8 +156,14 @@ export interface WorldState {
   features: Record<WorldFeature, boolean>;
 }
 
+/**
+ * ВРЕМЕННО НА ВРЕМЯ ТЕСТИРОВАНИЯ: всё открыто.
+ * Чтобы вернуть нормальную блокировку по МышРутке — поставьте false.
+ */
+export const UNLOCK_ALL_FOR_TESTING = true;
+
 export function buildWorldState(session: DailySession): WorldState {
-  const unlocked = session.myshroutkaGranted;
+  const unlocked = UNLOCK_ALL_FOR_TESTING || session.myshroutkaGranted;
   return {
     unlocked,
     features: {
@@ -200,7 +206,39 @@ export interface ChildProfile {
   avatarUrl?: string;
 }
 
-export type DayMark = "done" | "pending" | "muted";
+export type DayMark = "done" | "missed" | "today" | "future";
+
+/**
+ * Реальная неделя (Пн–Пт) на основе текущего дня.
+ * Система статусов (согласована в концепции):
+ *  - done   : день прошёл/идёт и Daily сделан → зелёный кружок с галочкой
+ *  - missed : день прошёл, Daily НЕ сделан → красная пунктирная рамка
+ *  - today  : идёт сегодня, Daily ещё не завершён → синяя пунктирная рамка
+ *  - future : день ещё не наступил → серый кружок с тремя точками
+ *
+ * doneDays — индексы (0=Пн..4=Пт) дней, где Daily выполнен.
+ * doneToday — выполнен ли сегодняшний Daily.
+ */
+export function buildWeek(
+  now: Date = new Date(),
+  doneDays: number[] = [0, 1],
+  doneToday = false,
+): WeekDay[] {
+  const labels = ["Пн", "Вт", "Ср", "Чт", "Пт"];
+  const js = now.getDay();
+  const todayIdx = js === 0 || js === 6 ? 5 : js - 1; // сб/вс → вся неделя прошла
+  return labels.map((label, i) => {
+    let mark: DayMark;
+    if (i < todayIdx) {
+      mark = doneDays.includes(i) ? "done" : "missed";
+    } else if (i === todayIdx) {
+      mark = doneToday ? "done" : "today";
+    } else {
+      mark = "future";
+    }
+    return { label, mark };
+  });
+}
 
 export interface WeekDay {
   /** «Пн», «Вт», … */
@@ -232,7 +270,25 @@ export interface AnswerOption {
  * - reading: показываем текст/условие, ответа нет, только «Далее»
  * - question: вопрос с вариантами или свободным вводом, есть проверка
  */
-export type StepKind = "reading" | "question";
+/** Лимит попыток на шаг (ТЗ): после 3 неудачных → «Пока не получилось» → доработки. */
+export const MAX_ATTEMPTS = 3;
+
+export type StepKind =
+  | "reading"
+  | "question"
+  | "punctuation" // RU_PUNCTUATION_MARKER — знаки + заглавные
+  | "order" // RU_SENTENCE_ORDER — карточки в правильном порядке
+  | "wordfix" // RU_CONTEXT_WORD_FIX — найти неподходящее слово и заменить
+  | "gapinput" // ввод в пропуск(и): орфограммы, проверочные, грамматика, анаграммы, vocab
+  | "sort" // сортировка слов по колонкам (2-4 группы)
+  | "fields" // поля-разбор: морфемы, словосочетание (несколько подписанных полей)
+  | "audio" // аудиодиктант: плеер (лимит прослушиваний) + загрузка фото
+  | "listening" // аудирование: диалог + вопросы (варианты и/или короткий ввод)
+  | "proofread" // найти ошибки в тексте и исправить (клик по слову + ввод)
+  | "readaloud"; // прочитать вслух и записать звук из браузера
+
+/** Допустимый знак в раннере пунктуации. */
+export type PunctMark = "." | "," | "?" | "!" | "";
 
 /**
  * Один шаг внутри задания «на платформе».
@@ -254,6 +310,86 @@ export interface TaskStep {
   correctInput?: string;
   /** Если задано — показываем трекер чтения на N минут (дневник читателя) */
   readingTimerMinutes?: number;
+
+  // ── punctuation (RU_PUNCTUATION_MARKER) ──
+  /** Слова исходного текста (без знаков), между ними слоты для знаков. */
+  words?: string[];
+  /** Эталон: знак после каждого слова по индексу (для слота i). */
+  expectedMarks?: PunctMark[];
+  /** Эталон: индексы слов, которые должны быть с заглавной буквы. */
+  expectedCapitals?: number[];
+
+  // ── order (RU_SENTENCE_ORDER) ──
+  /** Карточки в перемешанном виде (то, что видит ребёнок). */
+  cards?: string[];
+  /** Один или несколько допустимых порядков (массив индексов исходных cards). */
+  acceptedOrders?: number[][];
+
+  // ── wordfix (RU_CONTEXT_WORD_FIX) ──
+  /** Слова предложения (кликабельные). */
+  sentenceWords?: string[];
+  /** Индекс неподходящего слова. */
+  wrongWordIndex?: number;
+  /** Варианты замены (тексты). */
+  replacements?: string[];
+  /** Правильная замена (текст из replacements). */
+  correctReplacement?: string;
+
+  // ── gapinput (ввод в пропуск) ──
+  /**
+   * Элементы с пропусками. Каждый: текст с маркером пропуска "_" и ответ(ы).
+   * Подходит для орфограмм, проверочных слов, грамматики, анаграмм, vocab.
+   */
+  gaps?: {
+    /** Подпись/контекст слева (напр. "л_сной" или "I ___ a student"). */
+    label: string;
+    /** Допустимые ответы (регистр и пробелы игнорируются при сверке). */
+    accepted: string[];
+    /** Необязательная подсказка к конкретному пропуску. */
+    note?: string;
+  }[];
+
+  // ── sort (сортировка по колонкам) ──
+  /** Заголовки колонок (2-4). */
+  columns?: string[];
+  /** Чипы-слова: текст + индекс правильной колонки. */
+  chips?: { text: string; column: number }[];
+
+  // ── fields (поля-разбор) ──
+  /** Слово/пара, которую разбираем (показывается крупно). */
+  fieldsSubject?: string;
+  /** Поля разбора: подпись + допустимые ответы. */
+  fields?: { label: string; accepted: string[] }[];
+
+  // ── audio (аудиодиктант) ──
+  /** Путь к аудиофайлу (если есть). Пусто → плеер-заглушка. */
+  audioUrl?: string;
+  /** Лимит прослушиваний (по умолчанию 2). */
+  listenLimit?: number;
+
+  // ── listening (аудирование: диалог + вопросы) ──
+  /**
+   * Вопросы по прослушанному. Каждый: либо варианты (options), либо короткий ввод (accepted).
+   */
+  listenQuestions?: {
+    q: string;
+    options?: string[]; // если заданы — выбор варианта
+    correct?: string; // правильный вариант (из options)
+    accepted?: string[]; // если options нет — короткий ввод, допустимые ответы
+  }[];
+
+  // ── proofread (найти и исправить ошибки) ──
+  /** Слова текста. Кликабельны; ошибочные ребёнок должен найти и исправить. */
+  proofWords?: string[];
+  /**
+   * Карта исправлений: индекс слова → допустимые правильные написания.
+   * Только эти индексы считаются ошибочными; остальные — верные.
+   */
+  proofFixes?: { index: number; accepted: string[] }[];
+
+  // ── readaloud (прочитать вслух, записать звук) ──
+  /** Текст, который ребёнок читает вслух. */
+  readText?: string;
 }
 
 /**

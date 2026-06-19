@@ -1,0 +1,260 @@
+/**
+ * МышМат — олимпиадное ядро (игровой мир).
+ *
+ * Ключевая идея (см. plan.md §3):
+ *   УРОВЕНЬ — ЭТО МЕТОД, А НЕ СВОЙСТВО ЗАДАЧИ.
+ *   Одна и та же тема проходится на разной глубине L1→…→L5/L6.
+ *   Уровень описывает СПОСОБ работы с задачей и степень самостоятельности
+ *   записи рассуждения, а не «сложность ячейки».
+ *
+ * Тема — ЕДИНЫЙ УЗЕЛ карты мира, проходимый на разной глубине
+ * (а не отдельные узлы «Чётность L1», «Чётность L2»).
+ *
+ * Этот модуль — контракт данных. Он намеренно не зависит от React и Supabase,
+ * чтобы перенос на боевую БД (репозиторий-слой) был дешёвым.
+ */
+
+// ─────────────────────────────────────────────────────────────
+// Уровни L1–L6
+// ─────────────────────────────────────────────────────────────
+
+export type OlympiadLevel = "L1" | "L2" | "L3" | "L4" | "L5" | "L6";
+
+export const OLYMPIAD_LEVELS: OlympiadLevel[] = ["L1", "L2", "L3", "L4", "L5", "L6"];
+
+/**
+ * Режим записи рассуждения для уровня:
+ * - guidedFull    (L1–L2): пошагово, система ведёт «за руку», полные описания шагов, подсказки.
+ * - guidedCompact (L3):    шаги без подробных описаний; ребёнок сам расставляет план,
+ *                          дополняет решение, ищет ошибку в чужом решении. Подсказок минимум.
+ * - actionByAction(L4):    видит условие и число действий; заходит в действие →
+ *                          указывает тип действия → записывает выражение → так до ответа.
+ *                          Ответ — с лёгким опорным контекстом.
+ * - worksheet     (L5):    олимпиадный формат, полная самостоятельность. На листочке:
+ *                          фото + авто-проверка ответа/структуры + проверка методиста.
+ * - algebraic     (L6):    альтернатива пошаговости — формулы/уравнения, минимальная запись.
+ */
+export type ReasoningMode =
+  | "guidedFull"
+  | "guidedCompact"
+  | "actionByAction"
+  | "worksheet"
+  | "algebraic";
+
+export type HintPolicy = "many" | "some" | "minimal" | "none";
+
+export interface LevelSpec {
+  id: OlympiadLevel;
+  /** Короткое имя, напр. «Уровень 1». */
+  title: string;
+  /** Суть уровня одной фразой (для карточки уровня). */
+  tagline: string;
+  reasoningMode: ReasoningMode;
+  hintPolicy: HintPolicy;
+  /** Ориентир степени самостоятельности 0..1 (для описания и аналитики). */
+  autonomy: number;
+  /** Нужна ли ручная проверка методиста (фото листочка / письменное). */
+  manualReview: boolean;
+}
+
+export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
+  L1: {
+    id: "L1",
+    title: "Уровень 1",
+    tagline: "Ведём за руку: пошагово, с подсказками, по шаблону. Типовые задачи.",
+    reasoningMode: "guidedFull",
+    hintPolicy: "many",
+    autonomy: 0.1,
+    manualReview: false,
+  },
+  L2: {
+    id: "L2",
+    title: "Уровень 2",
+    tagline: "То же ведение и шаблон — но задачи нетиповые.",
+    reasoningMode: "guidedFull",
+    hintPolicy: "some",
+    autonomy: 0.3,
+    manualReview: false,
+  },
+  L3: {
+    id: "L3",
+    title: "Уровень 3",
+    tagline: "Пошагово, но подсказок минимум: сам расставь план и дополни решение.",
+    reasoningMode: "guidedCompact",
+    hintPolicy: "minimal",
+    autonomy: 0.55,
+    manualReview: false,
+  },
+  L4: {
+    id: "L4",
+    title: "Уровень 4",
+    tagline: "Без подсказок. Видишь число действий: действие → выражение → ответ.",
+    reasoningMode: "actionByAction",
+    hintPolicy: "none",
+    autonomy: 0.8,
+    manualReview: false,
+  },
+  L5: {
+    id: "L5",
+    title: "Уровень 5",
+    tagline: "Олимпиадный формат: полная самостоятельность, решение на листочке.",
+    reasoningMode: "worksheet",
+    hintPolicy: "none",
+    autonomy: 1,
+    manualReview: true,
+  },
+  L6: {
+    id: "L6",
+    title: "Уровень 6",
+    tagline: "Алгебраический метод: формулы и уравнения, минимальная запись.",
+    reasoningMode: "algebraic",
+    hintPolicy: "none",
+    autonomy: 1,
+    manualReview: false,
+  },
+};
+
+/**
+ * Дружелюбные названия уровней для детских карточек (макеты) +
+ * цветовой класс узла. Цвета берут палитру маскота: L1 зелёный … L5 розовый.
+ */
+export const LEVEL_UI: Record<OlympiadLevel, { name: string; color: string }> = {
+  L1: { name: "Знакомство с темой", color: "green" },
+  L2: { name: "Простые случаи", color: "blue" },
+  L3: { name: "Несколько типов", color: "purple" },
+  L4: { name: "Сложные условия", color: "orange" },
+  L5: { name: "Мастер уровня", color: "pink" },
+  L6: { name: "Алгебра темы", color: "teal" },
+};
+
+// ─────────────────────────────────────────────────────────────
+// Шаги структурированного решения (для guided/compact/action)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Тип шага решения:
+ * - info        : наблюдение/факт, ответа нет (только «Понятно»). Используется на L1.
+ * - choice      : выбор одного варианта.
+ * - number      : ввод числа.
+ * - expression  : ввод выражения/вычисления (напр. «20 ÷ 4»). Сверяется по значению.
+ * - order       : расставить пункты плана по порядку (L3).
+ * - findError   : найти неверный шаг в чужом решении (L3).
+ */
+export type OlympiadStepKind =
+  | "info"
+  | "choice"
+  | "number"
+  | "expression"
+  | "order"
+  | "findError";
+
+export interface OlympiadStepOption {
+  id: string;
+  label: string;
+  /** Верный вариант (для choice / findError). */
+  correct?: boolean;
+}
+
+export interface OlympiadStep {
+  id: string;
+  /** Короткий вопрос/заголовок шага. Виден на всех уровнях. */
+  title: string;
+  /**
+   * Полное ведение «за руку»: показывается на L1–L2 (guidedFull),
+   * на L3 скрыто (ребёнок действует сам). Это и есть «сжатие раннера».
+   */
+  guidance?: string;
+  kind: OlympiadStepKind;
+  /** Подсказка к конкретному шагу (доступна со 2-й попытки шага). */
+  hint?: string;
+
+  // choice / order / findError:
+  options?: OlympiadStepOption[];
+  /** Для order — правильный порядок (массив option.id). */
+  correctOrder?: string[];
+
+  // number / expression:
+  /** Допустимые ответы (число/выражение). Сверяются нормализованно или по значению. */
+  accepted?: string[];
+
+  // L4 (actionByAction):
+  /** Варианты «типа действия» (умножение / вычитание / деление / сложение). */
+  actionKindOptions?: string[];
+  /** Правильный тип действия. */
+  actionKind?: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Олимпиадная задача (привязана к теме и уровню)
+// ─────────────────────────────────────────────────────────────
+
+export interface OlympiadProblemV2 {
+  id: string;
+  themeId: string;
+  level: OlympiadLevel;
+  title: string;
+  statement: string;
+  /** Картинка/схема (геометрия, графы). Грузится в объектное хранилище. */
+  imageUrl?: string;
+  /** Эталонный финальный ответ (канонический вид). */
+  expectedAnswer: string;
+  /** Дополнительные принимаемые формы ответа. */
+  acceptedAnswers?: string[];
+  /** Нарастающие подсказки (каскад): hints[0] после 1-й ошибки и т.д. */
+  hints: string[];
+  rewardStars: number;
+  /** Теги навыков мышления (для аналитики методиста). */
+  skillTags: string[];
+  /** Опорный контекст ответа для L4 — первые слова предложений. */
+  answerScaffold?: string[];
+  /** Число действий — показывается на L4. */
+  actionCount?: number;
+  /**
+   * Структурированное решение (для guidedFull/guidedCompact/actionByAction).
+   * У L5 (листочек) и L6 (алгебра) может отсутствовать.
+   */
+  steps?: OlympiadStep[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Тема как узел карты мира
+// ─────────────────────────────────────────────────────────────
+
+export interface OlympiadTheme {
+  id: string;
+  title: string;
+  /** Краткое описание темы (для карточки узла). */
+  blurb: string;
+  /** Иконка-эмодзи узла. */
+  icon: string;
+  /** Зависимости: тема открывается после прохождения этих тем. */
+  dependsOn: string[];
+  /** Какие уровни заведены у темы (L6 опционален и не во всех темах). */
+  levels: OlympiadLevel[];
+  /** Целевой уровень для значка «тема приручена». */
+  masteryLevel: OlympiadLevel;
+  skillTags: string[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Прогресс ребёнка по теме (живёт в БД; на пилоте — мок/клиент)
+// ─────────────────────────────────────────────────────────────
+
+export type ThemeState = "locked" | "open" | "inProgress" | "mastered";
+
+export interface ThemeProgress {
+  themeId: string;
+  /** Текущий уровень ребёнка в теме. */
+  currentLevel: OlympiadLevel;
+  /** Решено верно ПОДРЯД на текущем уровне (для авто-перевода: 4 → уровень выше). */
+  streak: number;
+  /** Решено всего на текущем уровне. */
+  solvedAtLevel: number;
+  /** Подряд проваленных задач (для каскада: откат уровня + сигнал методисту). */
+  consecutiveFails: number;
+  /** Заработанные звёзды по теме. */
+  stars: number;
+  /** Получен ли значок (тема пройдена до masteryLevel). */
+  badgeEarned: boolean;
+  state: ThemeState;
+}

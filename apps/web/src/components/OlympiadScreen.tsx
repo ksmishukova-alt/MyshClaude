@@ -35,13 +35,10 @@ export function OlympiadScreen({ problem }: { problem: OlympiadProblem }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        sessionId: "",
         taskId: problem.id,
-        childId: "",
         mode: "platform",
         isCorrect: null,
         autonomyScore: completeness,
-        steps: [],
       }),
     }).catch(() => {});
     setSubmitted(true);

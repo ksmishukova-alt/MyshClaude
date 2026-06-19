@@ -10,7 +10,9 @@
   --sh-card:0 1.2cqh 2.6cqh rgba(27,72,124,.14),0 .25cqh .8cqh rgba(27,72,124,.07);
   --sh-soft:0 .8cqh 1.8cqh rgba(27,72,124,.11);
 }
-html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-ui);color:var(--ink);background:#bdefff;-webkit-font-smoothing:antialiased}
+html,body{width:100%;min-height:100%;font-family:var(--font-ui);color:var(--ink);background:#bdefff;-webkit-font-smoothing:antialiased}
+/* Домашний дашборд (.stage) — фиксированный, без скролла. Подстраницы скроллятся. */
+body:has(.stage){overflow:hidden;height:100%}
 .stage{inline-size:100dvw;block-size:100dvh;min-block-size:100svh;position:relative;overflow:hidden;container-type:size;
   background-image:linear-gradient(180deg,rgba(143,208,255,.10),rgba(154,212,114,.06)),url('/myshmat-assets/avatar.png');background-size:cover;background-position:center}
 .board{position:absolute;inset:clamp(8px,1.35cqh,20px) clamp(10px,1.45cqw,26px);display:grid;
@@ -93,7 +95,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-ui);colo
 .daily .chip .dot{width:clamp(16px,1.8cqw,22px);height:clamp(16px,1.8cqw,22px);display:grid;place-items:center;border-radius:50%;color:#fff;font-size:clamp(10px,1cqw,13px);background:currentColor;flex:0 0 auto}.daily .chip .dot::before{color:#fff}
 .daily .action{margin-top:clamp(6px,.8cqh,12px);height:clamp(34px,4cqh,50px);min-width:clamp(120px,15cqw,170px);border:0;border-radius:clamp(8px,.85cqw,10px);color:#fff;background:linear-gradient(180deg,#4589ff,#1a63ee);box-shadow:0 .65cqh 1.3cqh rgba(22,92,229,.26);font-family:inherit;font-size:clamp(15px,1.9cqw,22px);font-weight:800;line-height:1;display:inline-flex;align-items:center;justify-content:center;gap:clamp(7px,.8cqw,12px)}
 .daily .week{margin-top:clamp(10px,1.45cqh,18px);padding-top:clamp(8px,1.1cqh,16px);border-top:1px solid rgba(130,153,188,.26);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:clamp(12px,1.8cqw,24px);flex:0 0 auto}.daily .week-title{font-size:clamp(13px,1.58cqw,20px);font-weight:900;color:#0a225f}.daily .week-title b{color:#1978ff;font-size:clamp(17px,2.05cqw,27px)}
-.daily .days{display:grid;grid-template-columns:repeat(5,clamp(30px,4cqw,52px));gap:clamp(6px,.95cqw,16px);text-align:center}.daily .day span{display:block;font-size:clamp(11px,1.2cqw,16px);font-weight:800;color:#35436f;margin-bottom:clamp(3px,.45cqh,7px)}.daily .day i{width:clamp(22px,2.7cqw,32px);height:clamp(22px,2.7cqw,32px);border-radius:50%;display:grid;place-items:center;margin:0 auto;font-style:normal;color:#fff;font-size:clamp(12px,1.35cqw,18px);background:#4cbc61;font-weight:900}.daily .day.pending i{background:#fff;color:#1978ff;border:2px dashed #1978ff}.daily .day.muted i{background:#d9e1ee;color:#fff}
+.daily .days{display:grid;grid-template-columns:repeat(5,clamp(30px,4cqw,52px));gap:clamp(6px,.95cqw,16px);text-align:center}.daily .day span{display:block;font-size:clamp(11px,1.2cqw,16px);font-weight:800;color:#35436f;margin-bottom:clamp(3px,.45cqh,7px)}.daily .day i{width:clamp(22px,2.7cqw,32px);height:clamp(22px,2.7cqw,32px);border-radius:50%;display:grid;place-items:center;margin:0 auto;font-style:normal;font-size:clamp(12px,1.35cqw,18px);font-weight:900;box-sizing:border-box}.daily .day-done i{background:#4cbc61;color:#fff}.daily .day-missed i{background:#fff;color:transparent;border:2px dashed #ef5b6e}.daily .day-today i{background:#fff;color:transparent;border:2px dashed #1978ff}.daily .day-today span{color:#1978ff}.daily .day-future i{background:#d9e1ee;color:#7a89a5;font-size:clamp(9px,1cqw,13px);letter-spacing:.5px}
 @container (max-width: 620px){.daily .progress-row{grid-template-columns:1fr;gap:8px}.daily .daily-note{display:none}.daily .subject{grid-template-columns:54px 1fr}.daily .sub-icon{width:54px;height:54px}.daily .week{grid-template-columns:1fr}.daily .days{justify-content:space-between}}
 /* Daily mockup polish: keep labels readable inside the fixed contour */
 .daily .subject br{display:block}
@@ -300,3 +302,69 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-ui);colo
 .mini.is-locked::before,.route-card.is-locked::before{display:none!important;content:none!important}
 .route-card.route-map .closed{z-index:8!important;position:relative!important;background:rgba(255,255,255,.72)!important;color:#6a7488!important;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .route-card.route-map h2{z-index:8!important;position:relative!important}
+
+/* ============================================================
+   ФИНАЛЬНЫЕ ПРАВКИ CTA (перекрывают всё выше)
+   - Начать (daily): синяя
+   - Доработки: фиолетовая
+   - Коллекция (альбом): оранжевая, крупнее, ближе к карточке
+   - убрать подчёркивание и «размазывание» (filter) при наведении,
+     эффект увеличения (scale) оставить
+   ============================================================ */
+.daily .action,.revisions .btn-go,.btn-album,.stickers .btn-album{
+  text-decoration:none!important;
+}
+/* hover: только лёгкий подъём + scale, без filter-размытия */
+.daily .action:hover,.daily .action:focus-visible,
+.revisions .btn-go:hover,.revisions .btn-go:focus-visible,
+.btn-album:hover,.btn-album:focus-visible,
+.stickers .btn-album:hover,.stickers .btn-album:focus-visible{
+  filter:none!important;
+  transform:translateY(-2px) scale(1.035)!important;
+}
+
+/* Начать — синяя */
+.daily .action{
+  background:linear-gradient(180deg,#4A8DFF 0%,#2367F2 100%)!important;color:#fff!important;
+  box-shadow:0 .75cqh 1.45cqh rgba(35,103,242,.28),inset 0 1px 0 rgba(255,255,255,.38)!important;
+}
+.daily .action:hover,.daily .action:focus-visible{
+  background:linear-gradient(180deg,#5B9BFF 0%,#2C70F4 100%)!important;
+}
+
+/* Доработки — фиолетовая */
+.revisions .btn-go{
+  background:linear-gradient(180deg,#A06BFF 0%,#6D2EE5 100%)!important;color:#fff!important;
+  box-shadow:0 .75cqh 1.45cqh rgba(109,46,229,.30),inset 0 1px 0 rgba(255,255,255,.40)!important;
+}
+.revisions .btn-go:hover,.revisions .btn-go:focus-visible{
+  background:linear-gradient(180deg,#B27DFF 0%,#7A3DF0 100%)!important;
+}
+
+/* Коллекция (альбом) CTA на главной — оранжевая, чуть крупнее, ближе к карточке */
+.stickers .btn-album{
+  background:linear-gradient(180deg,#FFB33A 0%,#FF7A00 100%)!important;color:#fff!important;
+  font-weight:800!important;
+  font-size:clamp(10px,1.55cqw,16px)!important;
+  padding:clamp(7px,.92cqh,12px) clamp(15px,1.95cqw,26px)!important;
+  border-radius:clamp(11px,1.15cqw,18px)!important;
+  margin-top:clamp(6px,.85cqh,11px)!important;
+  box-shadow:0 .8cqh 1.5cqh rgba(255,122,0,.30),inset 0 1px 0 rgba(255,255,255,.42)!important;
+}
+.stickers .btn-album:hover,.stickers .btn-album:focus-visible{
+  background:linear-gradient(180deg,#FFC45B 0%,#FF850B 100%)!important;
+}
+
+/* ============================================================
+   Карточки-ссылки (route-card, mini) не должны подчёркивать
+   заголовки. Вся область остаётся кликабельной.
+   ============================================================ */
+a.route-card,a.mini,a.side-card,a.card{text-decoration:none!important}
+a.route-card h2,a.mini h3,a.mini h2,a.side-card h2,
+.route-card h2,.mini h3,.mini h2{text-decoration:none!important}
+
+/* Доработки: цвета активных иконок для чтения и английского */
+.debt-item.has-debt.debt-read{background:linear-gradient(135deg,#86d953,#209d39);color:#fff}
+.debt-item.has-debt.debt-eng{background:linear-gradient(135deg,#ff9aa2,#e8556b);color:#fff}
+/* Чуть крупнее заголовок «Мои доработки» */
+.side-card h2.side-title-lg{font-size:clamp(24px,5.4cqw,40px)}

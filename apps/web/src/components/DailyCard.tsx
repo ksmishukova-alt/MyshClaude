@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { DailySession, SubjectId, WeekDay } from "@/types/domain";
 import { countSubmitted, SUBJECTS } from "@/types/domain";
-import { statusToChip } from "@/lib/status";
+import { statusToChip, plural, leftVerb } from "@/lib/status";
 
 /** css-класс иконки предмета внутри .daily (см. globals.css) */
 const ICON_CLASS: Record<SubjectId, string> = {
@@ -92,8 +92,8 @@ export function DailyCard({
           <span>
             {remaining > 0 ? (
               <>
-                Остался{remaining === 1 ? "" : "ось"} {remaining} предмет
-                {remaining === 1 ? "" : remaining < 5 ? "а" : "ов"} —<br />
+                {leftVerb(remaining)} {remaining}{" "}
+                {plural(remaining, ["предмет", "предмета", "предметов"])} —<br />
                 ты почти у цели!
               </>
             ) : (
@@ -119,9 +119,9 @@ export function DailyCard({
         </div>
         <div className="days" aria-label="Неделя">
           {week.map((d) => (
-            <div key={d.label} className={`day${d.mark === "pending" ? " pending" : d.mark === "muted" ? " muted" : ""}`}>
+            <div key={d.label} className={`day day-${d.mark}`}>
               <span>{d.label}</span>
-              <i>{d.mark === "done" ? "✓" : d.mark === "muted" ? "…" : ""}</i>
+              <i>{d.mark === "done" ? "✓" : d.mark === "future" ? "•••" : ""}</i>
             </div>
           ))}
         </div>

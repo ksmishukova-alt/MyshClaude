@@ -12,8 +12,8 @@ import {
  * иначе — моки. Сигнатуры одинаковые, компоненты не зависят от источника.
  */
 
-export async function fetchHomeData(): Promise<HomeScreenData> {
-  return (await getHomeDataDb()) ?? getHomeData();
+export async function fetchHomeData(childId?: string): Promise<HomeScreenData> {
+  return (await getHomeDataDb(childId)) ?? getHomeData();
 }
 
 export async function fetchSubjectTasks(subjectId: SubjectId): Promise<DailyTask[]> {

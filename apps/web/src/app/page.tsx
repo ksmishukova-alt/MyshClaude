@@ -1,5 +1,6 @@
 import { fetchHomeData } from "@/lib/data";
 import { buildWorldState } from "@/types/domain";
+import { getCurrentChildId } from "@/lib/session";
 import { ProfileCard } from "@/components/ProfileCard";
 import { Hero } from "@/components/Hero";
 import { DailyCard } from "@/components/DailyCard";
@@ -7,7 +8,8 @@ import { SideColumn } from "@/components/SideColumn";
 import { RouteRow, WorldRow } from "@/components/WorldZone";
 
 export default async function HomePage() {
-  const data = await fetchHomeData();
+  const childId = await getCurrentChildId();
+  const data = await fetchHomeData(childId);
   const world = buildWorldState(data.session);
 
   return (

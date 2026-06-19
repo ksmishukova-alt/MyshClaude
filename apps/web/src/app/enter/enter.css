@@ -1,0 +1,19 @@
+.en-box { max-inline-size: 420px; }
+.en-roles { display: flex; gap: 10px; margin: 6px 0 16px; }
+.en-role {
+  flex: 1; cursor: pointer; font-family: inherit; border: 2px solid #e3e9f3; background: #fff;
+  border-radius: 14px; padding: 13px 10px; font-weight: 800; color: #45526f; font-size: 15px;
+}
+.en-role.on { border-color: var(--blue); background: #eef6ff; color: var(--blue-d); }
+.en-input {
+  inline-size: 100%; border: 2px solid #e3e9f3; border-radius: 12px; background: #fff;
+  padding: 13px 15px; font-family: inherit; font-size: 17px; color: #1a2550; margin-bottom: 10px;
+}
+.en-input:focus { outline: none; border-color: var(--blue); }
+.en-submit {
+  inline-size: 100%; border: 0; cursor: pointer; font-family: inherit; color: #fff; font-weight: 800;
+  background: linear-gradient(180deg, #3FA0E8, #1F6FD0); border-radius: 14px;
+  padding: 14px; font-size: 18px; box-shadow: 0 8px 18px rgba(31,111,208,.3);
+}
+.en-submit:disabled { background: #dde3ee; color: #aab3c6; box-shadow: none; cursor: default; }
+.en-childlink { display: inline-block; margin-top: 16px; color: var(--blue-d); font-weight: 700; text-decoration: none; font-size: 14px; }

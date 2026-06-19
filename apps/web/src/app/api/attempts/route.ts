@@ -1,29 +1,29 @@
 import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
+import { getCurrentChildId } from "@/lib/session";
 import type { StepStat } from "@/types/domain";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * POST /api/attempts
- * Тело: { sessionId, taskId, childId, mode, isCorrect?, autonomyScore, steps: StepStat[] }
+ * Тело: { taskId, childId?, mode, isCorrect?, autonomyScore?, steps?: StepStat[] }
  *
- * Сохраняет попытку и пошаговую аналитику, помечает прогресс предмета,
- * затем пересчитывает Daily и при необходимости выдаёт МышРутку (RPC).
+ * Серверная логика целиком в RPC submit_task_attempt:
+ * находит/создаёт сессию, сохраняет попытку, пересчитывает прогресс предмета,
+ * пересчитывает Daily и при готовности выдаёт МышРутку.
  *
- * Если Supabase не настроен — возвращает ok:false (фронт работает на моках).
+ * Без Supabase → ok:false (фронт работает на моках, это нормально).
  */
 export async function POST(req: Request) {
   const sb = getSupabase();
   if (!sb) {
-    return NextResponse.json(
-      { ok: false, reason: "supabase-not-configured" },
-      { status: 200 }
-    );
+    return NextResponse.json({ ok: false, reason: "supabase-not-configured" });
   }
 
   let body: {
-    sessionId: string;
     taskId: string;
-    childId: string;
+    childId?: string;
     mode: "platform" | "worksheet";
     isCorrect?: boolean;
     autonomyScore?: number;
@@ -35,48 +35,47 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, reason: "bad-json" }, { status: 400 });
   }
 
-  const status =
-    body.mode === "worksheet"
-      ? "submitted" // листочек уходит на проверку взрослому
-      : body.isCorrect
-      ? "successful"
-      : "submitted";
+  const childId =
+    body.childId && UUID_RE.test(body.childId)
+      ? body.childId
+      : await getCurrentChildId();
 
-  const { data: attempt, error: attErr } = await sb
-    .from("daily_task_attempts")
-    .insert({
-      session_id: body.sessionId,
-      task_id: body.taskId,
-      child_id: body.childId,
-      mode: body.mode,
-      is_correct: body.isCorrect ?? null,
-      autonomy_score: body.autonomyScore ?? null,
-      status,
-      submitted_at: new Date().toISOString(),
-    })
-    .select("id")
-    .single();
-
-  if (attErr || !attempt) {
-    return NextResponse.json({ ok: false, reason: attErr?.message }, { status: 500 });
+  // taskId должен быть реальным UUID из БД (на моках сюда не попадаем)
+  if (!body.taskId || !UUID_RE.test(body.taskId)) {
+    return NextResponse.json({ ok: false, reason: "task-id-not-uuid" });
   }
 
-  // пошаговая статистика
-  if (body.steps?.length) {
-    await sb.from("task_step_stats").insert(
-      body.steps.map((s) => ({
-        attempt_id: attempt.id,
-        step_id: s.stepId,
-        attempts: s.attempts,
-        hint_used: s.hintUsed,
-        solved_first_try: s.solvedFirstTry,
-        skipped_with_error: s.skippedWithError,
-      }))
-    );
+  const { data, error } = await sb.rpc("submit_task_attempt", {
+    p_child: childId,
+    p_task: body.taskId,
+    p_mode: body.mode,
+    p_is_correct: body.isCorrect ?? null,
+    p_autonomy: body.autonomyScore ?? null,
+  });
+
+  if (error) {
+    return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
   }
 
-  // пересчёт Daily + выдача МышРутки
-  await sb.rpc("recompute_daily_and_grant_myshroutka", { p_session: body.sessionId });
+  // пошаговая аналитика — только если step_id настоящие UUID (иначе пропускаем,
+  // чтобы не падать на FK; на реальном контенте step.id приходит из БД)
+  const result = data as { ok?: boolean; attemptId?: string } | null;
+  const attemptId = result?.attemptId;
+  if (attemptId && body.steps?.length) {
+    const realSteps = body.steps.filter((s) => UUID_RE.test(s.stepId));
+    if (realSteps.length) {
+      await sb.from("task_step_stats").insert(
+        realSteps.map((s) => ({
+          attempt_id: attemptId,
+          step_id: s.stepId,
+          attempts: s.attempts,
+          hint_used: s.hintUsed,
+          solved_first_try: s.solvedFirstTry,
+          skipped_with_error: s.skippedWithError,
+        }))
+      );
+    }
+  }
 
-  return NextResponse.json({ ok: true, attemptId: attempt.id });
+  return NextResponse.json(data ?? { ok: true });
 }

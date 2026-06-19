@@ -23,3 +23,8 @@
 .lg-key:hover{background:#e4ecf8}
 .lg-key:active{transform:scale(.94)}
 .lg-key.del{font-size:clamp(18px,2.2vw,26px);color:#7a88a8}
+
+/* адаптив: на низких экранах не центрируем жёстко, разрешаем скролл */
+@media (max-height:680px){
+  .lg-stage{justify-content:flex-start;overflow-y:auto}
+}

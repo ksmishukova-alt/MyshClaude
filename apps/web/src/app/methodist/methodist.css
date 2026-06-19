@@ -44,3 +44,21 @@
 .md-empty p{color:#5b6a86;font-weight:600}
 
 @media (max-width:760px){.md-layout{grid-template-columns:1fr}.md-queue{order:2}}
+
+/* ─── адаптив: панель методиста не должна обрезаться ─── */
+.md-stage{block-size:auto;min-block-size:100dvh;overflow-y:auto}
+.md-photo img{max-block-size:clamp(180px,32vh,360px)}
+/* на невысоких экранах (планшет в альбомной) — компактнее, кнопки всегда видны */
+@media (max-height:820px){
+  .md-photo{padding:clamp(8px,1.2vw,14px)}
+  .md-photo img{max-block-size:26vh}
+  .md-detail{padding:clamp(12px,1.8vw,22px)}
+  .md-detail-head{margin-bottom:clamp(8px,1.2vw,14px)}
+  .md-feedback{margin-bottom:clamp(8px,1.2vw,14px)}
+  .md-feedback textarea{rows:2}
+}
+/* кнопки вердикта — на узких не сжимаются в нечитабельное */
+@media (max-width:560px){
+  .md-actions{flex-direction:column}
+  .md-btn{inline-size:100%}
+}
