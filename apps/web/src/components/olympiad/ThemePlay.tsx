@@ -239,7 +239,7 @@ export function ThemePlay({
             ) : (
               <p className="thm-method-intro">{theme.blurb}</p>
             )}
-            <button className="thm-explain" onClick={startLevel}>Понятно, начать →</button>
+            <button className="thm-explain" onClick={() => startLevel()}>Понятно, начать →</button>
           </div>
         )}
 
@@ -269,7 +269,7 @@ export function ThemePlay({
         </div>
 
         <div className="thm-bottom">
-          <button className="thm-continue" onClick={startLevel}>Продолжить 🚀</button>
+          <button className="thm-continue" onClick={() => startLevel()}>Продолжить 🚀</button>
           <button className="thm-fav" onClick={() => router.push("/topics")}>🔖 К карте тем</button>
         </div>
       </div>
