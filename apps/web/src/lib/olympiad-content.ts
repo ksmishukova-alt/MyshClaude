@@ -14,6 +14,7 @@ import type {
   OlympiadProblemV2,
   OlympiadLevel,
   ThemeProgress,
+  AssumptionTask,
 } from "@/types/olympiad";
 import { clampLevel } from "@/lib/olympiad-progress";
 
@@ -486,8 +487,57 @@ const PARITY: OlympiadProblemV2[] = [
   },
 ];
 
+// ── «Звери и птицы» по методу предположения на всех уровнях (эталон, ТЗ §9) ──
+// Одни данные (30 голов, 100 ног; звери 4, птицы 2) — раннер генерирует экраны,
+// поддержка снимается по уровню (L1 авто-подсказки → L5 листок).
+const ZVERI_PTICY_BREAKDOWN = {
+  known: "30 голов, 100 ног. У зверя 4 ноги, у птицы 2.",
+  idea: "Представим, что все — птицы (у них ног меньше), и сравним со 100.",
+  steps: [
+    "Все 30 — птицы: 30 × 2 = 60 ног.",
+    "Не хватает: 100 − 60 = 40 ног.",
+    "Зверь добавляет 4 − 2 = 2 ноги: 40 ÷ 2 = 20 зверей.",
+    "Птиц: 30 − 20 = 10.",
+  ],
+  writtenSolution: "Все птицы → 60 ног. Не хватает 40. Каждый зверь добавляет 2: 40 ÷ 2 = 20 зверей, 30 − 20 = 10 птиц.",
+  answer: "20 зверей и 10 птиц.",
+  selfCheck: "20 × 4 + 10 × 2 = 80 + 20 = 100 ног, 20 + 10 = 30 голов. Сходится!",
+};
+const ZVERI_PTICY_ASSUMPTION: AssumptionTask = {
+  participants: [
+    { key: "zveri", label: "звери", countLabel: "зверей", one: "зверь", icon: "🦁", legs: 4 },
+    { key: "ptici", label: "птицы", countLabel: "птиц", one: "птица", icon: "🐦", legs: 2 },
+  ],
+  totalHeads: 30,
+  totalLegs: 100,
+  legUnit: "ног",
+  headUnit: "голов",
+};
+const ZP_STATEMENT =
+  "В зоопарке живут четвероногие звери и двуногие птицы. В зоопарке 30 голов и 100 ног. Сколько зверей и сколько птиц живёт в зоопарке?";
+const ZP_HINTS = [
+  "Представь, что все 30 — птицы (у них ног меньше). Сколько тогда ног?",
+  "Сравни с 100 — на сколько не хватает?",
+  "Один зверь добавляет 4 − 2 = 2 ноги. Раздели разницу на 2.",
+];
+const HEADS_LEGS_V2: OlympiadProblemV2[] = (["L1", "L2", "L3", "L4", "L5"] as const).map((lvl, i) => ({
+  id: `hl-${lvl.toLowerCase()}-1`,
+  themeId: "heads-legs",
+  level: lvl,
+  title: "Звери и птицы",
+  statement: ZP_STATEMENT,
+  expectedAnswer: "20 зверей, 10 птиц",
+  acceptedAnswers: ["20 и 10", "20 зверей 10 птиц", "зверей 20 птиц 10"],
+  hints: ZP_HINTS,
+  rewardStars: [15, 18, 22, 28, 40][i],
+  skillTags: ["метод предположения", "уравнивание"],
+  assumption: ZVERI_PTICY_ASSUMPTION,
+  breakdown: ZVERI_PTICY_BREAKDOWN,
+}));
+
 const BANK: Record<string, OlympiadProblemV2> = {};
-for (const p of [...HEADS_LEGS, ...LOGIC, ...PARITY]) BANK[p.id] = p;
+// HEADS_LEGS_V2 (по методу предположения) перекрывает старые демо-id того же уровня.
+for (const p of [...HEADS_LEGS, ...HEADS_LEGS_V2, ...LOGIC, ...PARITY]) BANK[p.id] = p;
 
 export function getProblem(id: string): OlympiadProblemV2 | null {
   return BANK[id] ?? null;

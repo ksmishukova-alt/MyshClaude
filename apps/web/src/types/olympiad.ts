@@ -248,10 +248,79 @@ export interface OlympiadProblemV2 {
    */
   steps?: OlympiadStep[];
   /**
+   * ШАБЛОН РЕШЕНИЯ С ПРОПУСКАМИ (основной формат записи). Ребёнок заполняет
+   * весь текст решения по пропускам — это и есть «запись решения», а не только ответ.
+   * Если задан, раннер рендерит шаблон (а не steps).
+   */
+  template?: SolutionTemplate;
+  /**
+   * Задача «метод предположения» (Головы и ноги). Из этих данных раннер
+   * генерирует экраны-шаги (условие → данные → пробный расчёт → сравнение →
+   * запись решения словами). Поддержка снимается по уровню (ТЗ §9).
+   */
+  assumption?: AssumptionTask;
+  /**
    * РАЗБОР (ТЗ §6) — показывается ПОСЛЕ завершения/провала, отдельно от подсказок.
    * Подсказки помогают думать до ответа; разбор учит оформлять решение после.
    */
   breakdown?: OlympiadBreakdown;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Шаблон решения с пропусками (ввод + карточки) — «запись решения»
+// ─────────────────────────────────────────────────────────────
+
+export type TemplateBlankKind = "number" | "expression" | "card" | "text";
+
+export interface TemplateBlank {
+  id: string;
+  kind: TemplateBlankKind;
+  /** Допустимые ответы (number/expression/text); accepted[0] — канон. */
+  accepted?: string[];
+  /** Карточки-варианты (для card); correct помечает верную. */
+  options?: OlympiadStepOption[];
+  /** Часть записи решения, в которую попадает этот пропуск (по умолчанию solutionSteps). */
+  field?: SolutionField;
+  placeholder?: string;
+  hint?: string;
+}
+
+/** Сегмент шаблона: либо статичный текст, либо пропуск. */
+export type TemplateSegment = { text: string } | { blank: TemplateBlank };
+
+export interface SolutionTemplate {
+  /** Необязательная вводная строка над текстом решения. */
+  lead?: string;
+  segments: TemplateSegment[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// «Метод предположения» (Головы и ноги): задача описывается ДАННЫМИ,
+// экраны-шаги и проверка генерируются раннером (AssumptionRunner).
+// ─────────────────────────────────────────────────────────────
+
+export interface AssumptionParticipant {
+  key: string;
+  /** Множественное им. п.: «звери», «птицы». */
+  label: string;
+  /** Родительный/счётный: «зверей», «птиц» (для ответа). Если нет — label. */
+  countLabel?: string;
+  /** Ед. ч. для строки «один зверь добавляет…». */
+  one?: string;
+  icon?: string;
+  /** Сколько «ног» (или колёс/лап) у одного. */
+  legs: number;
+}
+
+export interface AssumptionTask {
+  /** Ровно два вида. */
+  participants: [AssumptionParticipant, AssumptionParticipant];
+  totalHeads: number;
+  totalLegs: number;
+  /** Что считаем единицей «ног»: «ног», «колёс»… */
+  legUnit?: string;
+  /** Что считаем «головой»: «голов», «штук»… */
+  headUnit?: string;
 }
 
 /**

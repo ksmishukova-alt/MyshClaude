@@ -25,6 +25,16 @@ import type {
 import { LEVEL_SPECS, LEVEL_UI, OLYMPIAD_LEVELS } from "@/types/olympiad";
 import { applyResult, PROBLEMS_PER_LEVEL, type ProgressEvent } from "@/lib/olympiad-progress";
 import { OlympiadRunner } from "@/components/olympiad/OlympiadRunner";
+import { AssumptionRunner } from "@/components/olympiad/AssumptionRunner";
+
+/** ТЕСТ-РЕЖИМ: открыть все уровни темы для сквозного просмотра (L1–L5). */
+const TEST_OPEN_ALL_LEVELS = true;
+
+/** Выбор раннера по форме задачи. */
+function ProblemRunner({ problem, onComplete }: { problem: OlympiadProblemV2; onComplete: (a: OlympiadTaskAttempt) => void }) {
+  if (problem.assumption) return <AssumptionRunner problem={problem} onComplete={onComplete} />;
+  return <OlympiadRunner problem={problem} onComplete={onComplete} />;
+}
 
 export function ThemePlay({
   theme,
@@ -38,6 +48,7 @@ export function ThemePlay({
   const router = useRouter();
   const [progress, setProgress] = useState<ThemeProgress>(initialProgress);
   const [view, setView] = useState<"overview" | "play">("overview");
+  const [playLevel, setPlayLevel] = useState<OlympiadLevel | null>(null);
   const [showMethod, setShowMethod] = useState(false);
   const [problemSeq, setProblemSeq] = useState(0);
   const [banner, setBanner] = useState<{ event: ProgressEvent; notify: boolean } | null>(null);
@@ -53,6 +64,8 @@ export function ThemePlay({
 
   const themeLevels = OLYMPIAD_LEVELS.filter((l) => theme.levels.includes(l));
   const curIdx = OLYMPIAD_LEVELS.indexOf(progress.currentLevel);
+  // Уровень, который сейчас открыт в режиме РЕШЕНИЯ (для теста можно открыть любой).
+  const activeLevel: OlympiadLevel = playLevel ?? progress.currentLevel;
 
   /** Кол-во задач уровня и сколько «решено» (для карточек). Счётчик — реальный. */
   function levelStats(l: OlympiadLevel) {
@@ -78,16 +91,18 @@ export function ThemePlay({
   }, [progress, theme.id, problemsByLevel]);
 
   const levelProblems = useMemo(
-    () => problemsByLevel[progress.currentLevel] ?? [],
-    [problemsByLevel, progress.currentLevel],
+    () => problemsByLevel[activeLevel] ?? [],
+    [problemsByLevel, activeLevel],
   );
   const problem: OlympiadProblemV2 | null =
     levelProblems.length > 0 ? levelProblems[problemSeq % levelProblems.length] : null;
 
-  function startLevel() {
+  function startLevel(l?: OlympiadLevel) {
+    setPlayLevel(l ?? progress.currentLevel);
     setBanner(null);
     setCompleted(false);
     setShowMethod(false);
+    setProblemSeq(0);
     setView("play");
   }
 
@@ -113,7 +128,8 @@ export function ThemePlay({
 
   // ── ВИД: РЕШЕНИЕ ──
   if (view === "play") {
-    const spec = LEVEL_SPECS[progress.currentLevel];
+    const spec = LEVEL_SPECS[activeLevel];
+    const aIdx = OLYMPIAD_LEVELS.indexOf(activeLevel);
     return (
       <main className="top-stage" aria-label={`Тема: ${theme.title}`}>
         <div className="top-wrap olr-wrap">
@@ -125,18 +141,23 @@ export function ThemePlay({
           <div className="olr-levelbar">
             {themeLevels.map((l) => {
               const idx = OLYMPIAD_LEVELS.indexOf(l);
-              const cls = idx < curIdx ? "passed" : idx === curIdx ? "current" : "ahead";
+              const cls = idx < aIdx ? "passed" : idx === aIdx ? "current" : "ahead";
               return (
-                <div key={l} className={`olr-levelstep ${cls} ${LEVEL_UI[l].color}`} title={LEVEL_SPECS[l].tagline}>
+                <button
+                  key={l}
+                  className={`olr-levelstep ${cls} ${LEVEL_UI[l].color}`}
+                  title={`${LEVEL_SPECS[l].title}: ${LEVEL_SPECS[l].tagline}`}
+                  onClick={() => startLevel(l)}
+                >
                   <span className="olr-levelstep-id">{l}</span>
                   {l === theme.masteryLevel && <span className="olr-levelstep-star">★</span>}
-                </div>
+                </button>
               );
             })}
           </div>
           <div className="olr-levelinfo">
             <b>{spec.title}.</b> {spec.tagline}
-            <span className="olr-streak"> · серия {progress.streak}/4 без ошибок</span>
+            {activeLevel === progress.currentLevel && <span className="olr-streak"> · серия {progress.streak}/4 без ошибок</span>}
           </div>
 
           {banner && (
@@ -152,11 +173,11 @@ export function ThemePlay({
           )}
 
           {!banner && problem && (
-            <OlympiadRunner key={problem.id + problemSeq} problem={problem} onComplete={onComplete} />
+            <ProblemRunner key={problem.id + problemSeq + activeLevel} problem={problem} onComplete={onComplete} />
           )}
           {!banner && !problem && (
             <div className="olr-empty">
-              <p>На уровне {progress.currentLevel} пока нет задач в банке.</p>
+              <p>На уровне {activeLevel} пока нет задач в банке.</p>
               <button className="olr-cta" onClick={() => setView("overview")}>← К теме</button>
             </div>
           )}
@@ -228,8 +249,8 @@ export function ThemePlay({
             const ui = LEVEL_UI[l];
             const locked = s.state === "locked";
             return (
-              <button key={l} className={`thm-lvl ${ui.color} ${s.state}`} disabled={locked} onClick={startLevel} title={LEVEL_SPECS[l].tagline}>
-                <span className={`thm-lvl-badge ${ui.color}`}>{l}{locked && <i className="thm-lvl-lock">🔒</i>}</span>
+              <button key={l} className={`thm-lvl ${ui.color} ${s.state}`} disabled={locked && !TEST_OPEN_ALL_LEVELS} onClick={() => startLevel(l)} title={LEVEL_SPECS[l].tagline}>
+                <span className={`thm-lvl-badge ${ui.color}`}>{l}{locked && !TEST_OPEN_ALL_LEVELS && <i className="thm-lvl-lock">🔒</i>}</span>
                 <span className="thm-lvl-name">{ui.name}</span>
                 <span className="thm-lvl-desc">{LEVEL_SPECS[l].tagline}</span>
                 <span className="thm-lvl-count">{s.done} из {s.total} заданий</span>

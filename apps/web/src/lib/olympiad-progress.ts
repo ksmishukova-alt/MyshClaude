@@ -16,6 +16,7 @@ import type {
   OlympiadStepResult,
   OlympiadAttemptStatus,
   ReasoningCompleteness,
+  TemplateBlank,
 } from "@/types/olympiad";
 import { OLYMPIAD_LEVELS, LEVEL_SPECS, meetsCompleteness } from "@/types/olympiad";
 
@@ -299,6 +300,28 @@ export function checkStepAnswer(
   if (target.length === 1) {
     const val = asExpression ? evalExpression(input) : extractNumbers(input)[0];
     if (val != null && Math.abs(val - target[0]) < 1e-9) return true;
+  }
+  return false;
+}
+
+/**
+ * Проверка одного пропуска шаблона решения.
+ *  - card: выбран верный вариант (по id);
+ *  - number/expression/text: точное нормализованное совпадение ИЛИ совпадение
+ *    «последнего числа» (устойчиво к записи «30 × 2 = 60», «30*2=60» и просто «60»).
+ */
+export function checkBlank(blank: TemplateBlank, input: string): boolean {
+  if (blank.kind === "card") {
+    return blank.options?.find((o) => o.id === input)?.correct === true;
+  }
+  const norm = normalize(input);
+  if (!norm) return false;
+  if (blank.accepted?.some((a) => normalize(a) === norm)) return true;
+  const got = extractNumbers(input);
+  const target = extractNumbers(blank.accepted?.[0] ?? "");
+  if (got.length && target.length) {
+    // сравниваем итоговое (последнее) число выражения
+    return Math.abs(got[got.length - 1] - target[target.length - 1]) < 1e-9;
   }
   return false;
 }
