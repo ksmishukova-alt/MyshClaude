@@ -160,7 +160,7 @@ export interface WorldState {
  * ВРЕМЕННО НА ВРЕМЯ ТЕСТИРОВАНИЯ: всё открыто.
  * Чтобы вернуть нормальную блокировку по МышРутке — поставьте false.
  */
-export const UNLOCK_ALL_FOR_TESTING = true;
+export const UNLOCK_ALL_FOR_TESTING = false;
 
 export function buildWorldState(session: DailySession): WorldState {
   const unlocked = UNLOCK_ALL_FOR_TESTING || session.myshroutkaGranted;

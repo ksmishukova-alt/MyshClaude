@@ -16,37 +16,26 @@ do $$ begin
   create type theme_state as enum ('locked','open','inProgress','mastered');
 exception when duplicate_object then null; end $$;
 
--- ─────────────────────────────────────────────
--- Темы (узлы карты мира)
--- ─────────────────────────────────────────────
 create table if not exists olympiad_themes (
   id text primary key,
   ord int not null default 0,
   title text not null,
   mastery_level olympiad_level not null,
   depends_on text[] not null default '{}',
-  -- полный объект OlympiadTheme: { id,title,blurb,icon,dependsOn,levels,masteryLevel,skillTags }
   data jsonb not null
 );
 
--- ─────────────────────────────────────────────
--- Банк задач
--- ─────────────────────────────────────────────
 create table if not exists olympiad_problems (
   id text primary key,
   theme_id text not null references olympiad_themes(id) on delete cascade,
   level olympiad_level not null,
   ord int not null default 0,
   reward_stars int not null default 0,
-  -- полный объект OlympiadProblemV2 (statement, hints, steps, expectedAnswer, …)
   data jsonb not null
 );
 create index if not exists olympiad_problems_theme_level
   on olympiad_problems (theme_id, level, ord);
 
--- ─────────────────────────────────────────────
--- Прогресс ребёнка по теме (авто-перевод/откат считает TS-слой)
--- ─────────────────────────────────────────────
 create table if not exists child_theme_progress (
   child_id uuid not null references child_profiles(id) on delete cascade,
   theme_id text not null references olympiad_themes(id) on delete cascade,
@@ -61,22 +50,18 @@ create table if not exists child_theme_progress (
   primary key (child_id, theme_id)
 );
 
--- лог попыток олимпиадных задач (аналитика методиста; храним всё — plan.md §6)
 create table if not exists olympiad_attempts (
   id uuid primary key default gen_random_uuid(),
   child_id uuid not null references child_profiles(id) on delete cascade,
   problem_id text not null,
   theme_id text not null,
   level olympiad_level not null,
-  is_correct bool,                 -- null = ушло методисту (L5 листочек)
+  is_correct bool,
   attempts_used int not null default 1,
-  uploaded_solution_url text,      -- фото листочка (L5)
+  uploaded_solution_url text,
   created_at timestamptz not null default now()
 );
 
--- ─────────────────────────────────────────────
--- СИД: темы
--- ─────────────────────────────────────────────
 insert into olympiad_themes (id, ord, title, mastery_level, depends_on, data) values
  ('logic', 1, 'Логика', 'L2', '{}', '{"id":"logic","title":"Логика","blurb":"Рыцари и лжецы, истина и ложь, рассуждение от противного.","icon":"🧩","dependsOn":[],"levels":["L1","L2","L5"],"masteryLevel":"L2","skillTags":["логика","от противного"]}'),
  ('search', 2, 'Перебор', 'L2', '{logic}', '{"id":"search","title":"Перебор","blurb":"Аккуратно перебрать все случаи и ничего не пропустить.","icon":"🔎","dependsOn":["logic"],"levels":["L1","L2"],"masteryLevel":"L2","skillTags":["перебор","систематичность"]}'),
@@ -89,9 +74,6 @@ on conflict (id) do update set
   ord = excluded.ord, title = excluded.title, mastery_level = excluded.mastery_level,
   depends_on = excluded.depends_on, data = excluded.data;
 
--- ─────────────────────────────────────────────
--- СИД: задачи (data = полный OlympiadProblemV2)
--- ─────────────────────────────────────────────
 insert into olympiad_problems (id, theme_id, level, ord, reward_stars, data) values
  ('hl-l1-1','heads-legs','L1',1,15,'{"id":"hl-l1-1","themeId":"heads-legs","level":"L1","title":"Зайцы и змеи","statement":"В живом уголке сидят зайцы и змеи. Всего 8 голов и 20 ног. У зайца 4 лапы, у змеи лап нет (0). Сколько зайцев и сколько змей?","expectedAnswer":"5 зайцев, 3 змеи","acceptedAnswers":["5 и 3","зайцев 5 змей 3","5 зайцев 3 змеи"],"hints":["Представь, что в уголке ВСЕ — змеи. Сколько тогда было бы ног?","Ног на самом деле 20, а у «всех змей» — 0. Куда делась разница?","Каждая замена змеи на зайца добавляет 4 ноги. Раздели разницу на 4."],"rewardStars":15,"skillTags":["метод предположения"],"steps":[{"id":"s1","title":"Представь, что ВСЕ — змеи. Сколько тогда всего ног?","guidance":"У змеи 0 ног. Если бы все 8 голов были змеями, ног было бы 8 × 0 = 0.","kind":"number","accepted":["0"],"hint":"8 змей × 0 ног = 0."},{"id":"s2","title":"На сколько это меньше, чем на самом деле?","guidance":"На самом деле ног 20. Разница: 20 − 0 = 20.","kind":"number","accepted":["20"],"hint":"20 − 0 = 20."},{"id":"s3","title":"Замена змеи на зайца добавляет 4 ноги. Сколько зайцев нужно?","guidance":"Разницу 20 делим на 4: 20 ÷ 4 = 5. Значит зайцев 5.","kind":"expression","accepted":["20 / 4","20÷4","5"],"hint":"20 ÷ 4 = ?"},{"id":"s4","title":"Сколько тогда змей?","guidance":"Всего голов 8. Змей: 8 − 5 = 3.","kind":"number","accepted":["3"],"hint":"8 − 5 = 3."}]}'),
  ('hl-l2-1','heads-legs','L2',1,18,'{"id":"hl-l2-1","themeId":"heads-legs","level":"L2","title":"Овцы и гуси","statement":"На лугу пасутся овцы (4 ноги) и гуси (2 ноги). Всего 10 голов и 28 ног. Сколько овец и сколько гусей?","expectedAnswer":"4 овцы, 6 гусей","acceptedAnswers":["4 и 6","овец 4 гусей 6","4 овцы 6 гусей"],"hints":["Представь, что все 10 — гуси (по 2 ноги). Сколько ног получится?","Сравни с настоящими 28 ногами — найди разницу.","Замена гуся на овцу добавляет 4 − 2 = 2 ноги. Раздели разницу на 2."],"rewardStars":18,"skillTags":["метод предположения"],"steps":[{"id":"s1","title":"Пусть все 10 — гуси. Сколько всего ног?","guidance":"Гусь — 2 ноги. 10 × 2 = 20.","kind":"expression","accepted":["10 * 2","10×2","20"],"hint":"10 × 2 = ?"},{"id":"s2","title":"Какая разница с настоящими 28 ногами?","guidance":"28 − 20 = 8.","kind":"number","accepted":["8"],"hint":"28 − 20."},{"id":"s3","title":"Замена гуся на овцу добавляет сколько ног?","guidance":"У овцы 4, у гуся 2. Разница 4 − 2 = 2 ноги за замену.","kind":"number","accepted":["2"],"hint":"4 − 2."},{"id":"s4","title":"Сколько овец? А гусей?","guidance":"Овец: 8 ÷ 2 = 4. Гусей: 10 − 4 = 6.","kind":"expression","accepted":["8 / 2","8÷2","4"],"hint":"Раздели разницу 8 на 2."}]}'),
@@ -105,9 +87,6 @@ on conflict (id) do update set
   theme_id = excluded.theme_id, level = excluded.level, ord = excluded.ord,
   reward_stars = excluded.reward_stars, data = excluded.data;
 
--- ─────────────────────────────────────────────
--- СИД: демо-прогресс ребёнка Артёма (совпадает с мок-сидом)
--- ─────────────────────────────────────────────
 insert into child_theme_progress
   (child_id, theme_id, current_level, streak, solved_at_level, stars, badge_earned, state) values
  ('11111111-1111-1111-1111-111111111111','logic','L2',1,3,48,true,'mastered'),
