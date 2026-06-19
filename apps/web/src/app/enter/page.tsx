@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AdultLogin } from "@/components/AdultLogin";
 import "../login/login.css";
 import "./enter.css";
@@ -9,7 +10,9 @@ export default function EnterPage() {
       <div className="lg-logo">
         Мыш<span>Мат</span>
       </div>
-      <AdultLogin />
+      <Suspense fallback={null}>
+        <AdultLogin />
+      </Suspense>
     </main>
   );
 }
