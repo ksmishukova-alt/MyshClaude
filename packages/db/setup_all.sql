@@ -1,6 +1,5 @@
 -- ============================================================
 -- МышМат — полная установка БД одним файлом
--- Выполните целиком в Supabase → SQL Editor → New query → Run
 -- (0001_init + 0002_seed + 0003_auth + 0004_submit_attempt + 0005_olympiad)
 -- Повторный запуск безопасен.
 -- ============================================================
@@ -497,17 +496,57 @@ create table if not exists child_theme_progress (
   primary key (child_id, theme_id)
 );
 
+-- Попытка олимпиадного задания (ТЗ §1) — храним ВСЮ структуру решения, а не только
+-- правильность: запись 5 частей, шаги (jsonb), подсказки, ошибки, самоисправление,
+-- полнота и статус. Методист/отчёт видят, КАК ребёнок думал.
 create table if not exists olympiad_attempts (
   id uuid primary key default gen_random_uuid(),
   child_id uuid not null references child_profiles(id) on delete cascade,
   problem_id text not null,
   theme_id text not null,
   level olympiad_level not null,
+  recording_format text,
+  -- запись решения (5 частей)
+  selected_data text,
+  solution_plan text,
+  solution_steps text,
+  reasoning_text text,
+  final_answer text,
+  -- структура шагов: [{stepId,value,actionKind,explanation,attempts,hintUsed,hadError,correct,errorCodes}]
+  steps jsonb not null default '[]'::jsonb,
+  hints_used int not null default 0,
+  attempts int not null default 1,
+  error_codes jsonb not null default '[]'::jsonb,
+  self_correction bool not null default false,
+  reasoning_completeness text not null default 'notChecked',
+  status text not null default 'inProgress',
+  final_answer_correct bool,
+  uploaded_solution_urls jsonb not null default '[]'::jsonb,
+  reward_stars int not null default 0,
+  -- обратная совместимость со старой схемой:
   is_correct bool,
   attempts_used int not null default 1,
   uploaded_solution_url text,
   created_at timestamptz not null default now()
 );
+-- Апгрейд существующей таблицы (если она была создана по старой схеме):
+alter table olympiad_attempts add column if not exists recording_format text;
+alter table olympiad_attempts add column if not exists selected_data text;
+alter table olympiad_attempts add column if not exists solution_plan text;
+alter table olympiad_attempts add column if not exists solution_steps text;
+alter table olympiad_attempts add column if not exists reasoning_text text;
+alter table olympiad_attempts add column if not exists final_answer text;
+alter table olympiad_attempts add column if not exists steps jsonb not null default '[]'::jsonb;
+alter table olympiad_attempts add column if not exists hints_used int not null default 0;
+alter table olympiad_attempts add column if not exists attempts int not null default 1;
+alter table olympiad_attempts add column if not exists error_codes jsonb not null default '[]'::jsonb;
+alter table olympiad_attempts add column if not exists self_correction bool not null default false;
+alter table olympiad_attempts add column if not exists reasoning_completeness text not null default 'notChecked';
+alter table olympiad_attempts add column if not exists status text not null default 'inProgress';
+alter table olympiad_attempts add column if not exists final_answer_correct bool;
+alter table olympiad_attempts add column if not exists uploaded_solution_urls jsonb not null default '[]'::jsonb;
+alter table olympiad_attempts add column if not exists reward_stars int not null default 0;
+create index if not exists olympiad_attempts_child on olympiad_attempts (child_id, created_at desc);
 
 insert into olympiad_themes (id, ord, title, mastery_level, depends_on, data) values
  ('logic', 1, 'Логика', 'L2', '{}', '{"id":"logic","title":"Логика","blurb":"Рыцари и лжецы, истина и ложь, рассуждение от противного.","icon":"🧩","dependsOn":[],"levels":["L1","L2","L5"],"masteryLevel":"L2","skillTags":["логика","от противного"]}'),
@@ -527,16 +566,4 @@ insert into olympiad_problems (id, theme_id, level, ord, reward_stars, data) val
  ('hl-l3-1','heads-legs','L3',1,22,'{"id":"hl-l3-1","themeId":"heads-legs","level":"L3","title":"Машины и мотоциклы","statement":"На стоянке машины (4 колеса) и мотоциклы (2 колеса). Всего 7 транспортных средств и 22 колеса. Сколько машин?","expectedAnswer":"4 машины","acceptedAnswers":["4","4 машины 3 мотоцикла","машин 4"],"hints":["Предположи, что все — мотоциклы, и сравни число колёс."],"rewardStars":22,"skillTags":["метод предположения","план"],"steps":[{"id":"plan","title":"Сначала расставь план решения по порядку","kind":"order","options":[{"id":"a","label":"Предположить, что все — мотоциклы"},{"id":"b","label":"Посчитать колёса при этом предположении"},{"id":"c","label":"Найти разницу с настоящим числом колёс"},{"id":"d","label":"Разделить разницу на «добавку» за замену"}],"correctOrder":["a","b","c","d"]},{"id":"s1","title":"Все 7 — мотоциклы: сколько колёс?","kind":"number","accepted":["14"]},{"id":"s2","title":"Разница с 22 колёсами?","kind":"number","accepted":["8"]},{"id":"s3","title":"Сколько машин? (замена добавляет 2 колеса)","kind":"number","accepted":["4"]}]}'),
  ('hl-l4-1','heads-legs','L4',1,28,'{"id":"hl-l4-1","themeId":"heads-legs","level":"L4","title":"Пауки и жуки","statement":"В коробке пауки (8 ног) и жуки (6 ног). Всего 12 насекомых и 84 ноги. Сколько пауков?","expectedAnswer":"6 пауков","acceptedAnswers":["6","6 пауков 6 жуков","пауков 6"],"hints":[],"rewardStars":28,"skillTags":["метод предположения","самостоятельный план"],"actionCount":3,"answerScaffold":["Пауков —","значит, жуков —"],"steps":[{"id":"a1","title":"Действие 1","kind":"expression","accepted":["12 * 6","12×6","72"],"actionKindOptions":["сложение","вычитание","умножение","деление"],"actionKind":"умножение"},{"id":"a2","title":"Действие 2","kind":"expression","accepted":["84 - 72","12"],"actionKindOptions":["сложение","вычитание","умножение","деление"],"actionKind":"вычитание"},{"id":"a3","title":"Действие 3","kind":"expression","accepted":["12 / 2","12÷2","6"],"actionKindOptions":["сложение","вычитание","умножение","деление"],"actionKind":"деление"}]}'),
  ('hl-l5-1','heads-legs','L5',1,40,'{"id":"hl-l5-1","themeId":"heads-legs","level":"L5","title":"Велосипеды, машины и трёхколёсные","statement":"Во дворе стоят велосипеды (2 колеса), машины (4 колеса) и трёхколёсные самокаты (3 колеса). Всего 10 штук и 29 колёс, причём велосипедов вдвое больше, чем машин. Сколько каждого вида? Реши на листочке, сфотографируй решение и впиши ответ.","expectedAnswer":"4 велосипеда, 2 машины, 4 самоката","acceptedAnswers":["4 2 4","велосипедов 4 машин 2 самокатов 4"],"hints":[],"rewardStars":40,"skillTags":["метод предположения","система условий","самостоятельность"]}'),
- ('logic-l1-1','logic','L1',1,16,'{"id":"logic-l1-1","themeId":"logic","level":"L1","title":"Рыцари и лжецы","statement":"На острове рыцари всегда говорят правду, а лжецы всегда лгут. Встретились трое. А сказал: «Б — лжец». Б сказал: «В — лжец». В сказал: «А и Б оба лжецы». Сколько среди них рыцарей?","expectedAnswer":"1","acceptedAnswers":["1 рыцарь","один"],"hints":["Предположи, что В говорит правду. Тогда А и Б — лжецы. Нет ли противоречия?","Если В — лжец, то неверно, что «А и Б оба лжецы» — значит хотя бы один из них рыцарь."],"rewardStars":16,"skillTags":["логика","от противного"],"steps":[{"id":"s1","title":"Предположим, что В — рыцарь (говорит правду). Кто тогда А и Б?","guidance":"Если В прав, то «А и Б оба лжецы» — правда. Значит и А, и Б лжецы.","kind":"choice","options":[{"id":"a","label":"Оба лжецы","correct":true},{"id":"b","label":"Оба рыцари"},{"id":"c","label":"Один рыцарь, один лжец"}],"hint":"В утверждает: «А и Б оба лжецы»."},{"id":"s2","title":"А — лжец и сказал «Б — лжец». Значит Б на самом деле…","guidance":"Лжец лжёт, поэтому правда обратна: Б — рыцарь. Но мы предположили, что Б лжец — противоречие!","kind":"choice","options":[{"id":"a","label":"Рыцарь — противоречие с предположением","correct":true},{"id":"b","label":"Лжец — всё сходится"}],"hint":"Лжец говорит неправду, значит обратное его словам — истина."},{"id":"s3","title":"Значит В — лжец. Сколько всего рыцарей среди троих?","guidance":"Разбор показывает: рыцарь ровно один (это Б).","kind":"number","accepted":["1"],"hint":"Проверь: только Б оказывается рыцарем."}]}'),
- ('logic-l5-1','logic','L5',1,36,'{"id":"logic-l5-1","themeId":"logic","level":"L5","title":"Кто разбил вазу","statement":"Трое детей. Ровно один разбил вазу и ровно один соврал. Аня: «Я не била». Боря: «Это Аня». Вера: «Это не я». Кто разбил вазу? Реши на листочке и впиши ответ.","expectedAnswer":"Вера","acceptedAnswers":["вера","вазу разбила вера"],"hints":[],"rewardStars":36,"skillTags":["логика","перебор случаев"]}'),
- ('parity-l1-1','parity','L1',1,14,'{"id":"parity-l1-1","themeId":"parity","level":"L1","title":"Сумма 1..10","statement":"На доске числа от 1 до 10. Можно ли стереть несколько так, чтобы сумма оставшихся равнялась 7? Если да — приведи пример (впиши оставшиеся числа), если нет — напиши «нет».","expectedAnswer":"7","acceptedAnswers":["3 4","1 2 4","2 5","1 6"],"hints":["Какая самая маленькая сумма, если оставить только одно число?","Можно оставить, например, числа 3 и 4 — их сумма 7."],"rewardStars":14,"skillTags":["чётность","сумма"],"steps":[{"id":"s1","title":"Можно ли получить сумму 7?","guidance":"Да: оставим только числа, дающие в сумме 7, остальные сотрём.","kind":"choice","options":[{"id":"a","label":"Да, можно","correct":true},{"id":"b","label":"Нет, невозможно"}],"hint":"Попробуй оставить 3 и 4."},{"id":"s2","title":"Впиши пример оставшихся чисел (через пробел)","guidance":"Например, 3 и 4: 3 + 4 = 7.","kind":"number","accepted":["3 4","1 2 4","2 5","1 6","7"],"hint":"3 + 4 = 7."}]}')
-on conflict (id) do update set
-  theme_id = excluded.theme_id, level = excluded.level, ord = excluded.ord,
-  reward_stars = excluded.reward_stars, data = excluded.data;
-
-insert into child_theme_progress
-  (child_id, theme_id, current_level, streak, solved_at_level, stars, badge_earned, state) values
- ('11111111-1111-1111-1111-111111111111','logic','L2',1,3,48,true,'mastered'),
- ('11111111-1111-1111-1111-111111111111','search','L1',2,2,20,false,'inProgress'),
- ('11111111-1111-1111-1111-111111111111','heads-legs','L1',0,0,0,false,'open')
-on conflict (child_id, theme_id) do nothing;
+ ('logic-l1-1','logic','L1',1,16,'{"id":"logic-l1-1","themeId":"logic","level":"L1","title":"Рыцари и лжецы","statement":"На острове рыцари всегда говорят правду, а лжецы всегда лгут. Встретились трое. А сказал: «Б — лжец». Б сказал: «В — лжец». В сказал: «А и Б оба лжецы». Сколько среди них рыцарей?","expectedAnswer":"1","acceptedAnswers":["1 рыцарь","один"],"hints":["Предположи, что В говорит правду. Тогда А и Б — лжецы. Нет ли противоречия?","Если В — лжец, то неверно, что «А и Б оба лжецы» — значит хотя бы один из них рыцарь."],"rewardStars":16,"skillTags":["логика","от противного"],"steps":[{"id":"s1","title":"Предположим, что В — рыцарь (говорит правду). Кто тогда А и Б?","guidance":"Если В прав, то «А и Б оба лжецы» — правда. Значит и А, и Б лжецы.","kind":"choice","options":[{"id":"a","label":"Оба лжецы","correct":true},{"id":"b","label":"Оба рыцари"},{"id":"c","label":"Один рыцарь, один лжец"}],"hint":"В утверждает: «А и Б оба лжецы»."},{"id":"s2","title":"А — лжец и сказал «Б — лжец». Значит Б на самом деле…","guidance":"Лжец лжёт, поэтому правда обратна: Б — рыцарь. Но мы предположили, что Б лжец — противоречие!","kind":"choice","options":[{"id":"a","label":"Рыцарь — противоречие с предположением","correct":true},{"id":"b","label":"Лжец — всё сходится"}],"hint":"Лжец говорит неправду, значит обратное его словам — истина."},{"id":"s3",

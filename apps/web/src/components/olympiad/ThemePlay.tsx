@@ -22,7 +22,7 @@ import type {
   OlympiadProblemV2,
   OlympiadTaskAttempt,
 } from "@/types/olympiad";
-import { LEVEL_SPECS, LEVEL_UI, OLYMPIAD_LEVELS } from "@/types/olympiad";
+import { OLYMPIAD_LEVELS, STAGE_DEFS, THEME_STAGES, levelToStage, type ThemeStage } from "@/types/olympiad";
 import { applyResult, PROBLEMS_PER_LEVEL, type ProgressEvent } from "@/lib/olympiad-progress";
 import { OlympiadRunner } from "@/components/olympiad/OlympiadRunner";
 import { AssumptionRunner } from "@/components/olympiad/AssumptionRunner";
@@ -106,6 +106,29 @@ export function ThemePlay({
     setView("play");
   }
 
+  // ── Стадии (детский интерфейс A+C): L1–L2 «Учусь», L3–L4 «Тренируюсь», L5 «Решаю сам» ──
+  const stagesPresent = THEME_STAGES.filter((st) =>
+    STAGE_DEFS[st].levels.some((l) => theme.levels.includes(l)),
+  );
+  function stageStats(st: ThemeStage) {
+    const lvls = STAGE_DEFS[st].levels.filter((l) => theme.levels.includes(l));
+    let done = 0;
+    let total = 0;
+    for (const l of lvls) {
+      const s = levelStats(l);
+      done += s.done;
+      total += s.total;
+    }
+    const allPassed = lvls.length > 0 && lvls.every((l) => OLYMPIAD_LEVELS.indexOf(l) < curIdx);
+    const isCurrent = levelToStage(progress.currentLevel) === st;
+    const state: "passed" | "current" | "locked" = allPassed ? "passed" : isCurrent ? "current" : "locked";
+    return { lvls, done, total, state };
+  }
+  function startStage(st: ThemeStage) {
+    const first = STAGE_DEFS[st].levels.find((l) => theme.levels.includes(l));
+    if (first) startLevel(first);
+  }
+
   function onComplete(attempt: OlympiadTaskAttempt) {
     const res = applyResult(progress, attempt.rewardStars, {
       status: attempt.status,
@@ -128,8 +151,8 @@ export function ThemePlay({
 
   // ── ВИД: РЕШЕНИЕ ──
   if (view === "play") {
-    const spec = LEVEL_SPECS[activeLevel];
-    const aIdx = OLYMPIAD_LEVELS.indexOf(activeLevel);
+    const activeStage = levelToStage(activeLevel);
+    const aStageIdx = THEME_STAGES.indexOf(activeStage);
     return (
       <main className="top-stage" aria-label={`Тема: ${theme.title}`}>
         <div className="top-wrap olr-wrap">
@@ -139,24 +162,23 @@ export function ThemePlay({
           </header>
 
           <div className="olr-levelbar">
-            {themeLevels.map((l) => {
-              const idx = OLYMPIAD_LEVELS.indexOf(l);
-              const cls = idx < aIdx ? "passed" : idx === aIdx ? "current" : "ahead";
+            {stagesPresent.map((st) => {
+              const sIdx = THEME_STAGES.indexOf(st);
+              const cls = sIdx < aStageIdx ? "passed" : sIdx === aStageIdx ? "current" : "ahead";
               return (
                 <button
-                  key={l}
-                  className={`olr-levelstep ${cls} ${LEVEL_UI[l].color}`}
-                  title={`${LEVEL_SPECS[l].title}: ${LEVEL_SPECS[l].tagline}`}
-                  onClick={() => startLevel(l)}
+                  key={st}
+                  className={`olr-levelstep wide ${cls} ${STAGE_DEFS[st].color}`}
+                  title={STAGE_DEFS[st].tagline}
+                  onClick={() => startStage(st)}
                 >
-                  <span className="olr-levelstep-id">{l}</span>
-                  {l === theme.masteryLevel && <span className="olr-levelstep-star">★</span>}
+                  <span className="olr-levelstep-id">{STAGE_DEFS[st].name}</span>
                 </button>
               );
             })}
           </div>
           <div className="olr-levelinfo">
-            <b>{spec.title}.</b> {spec.tagline}
+            <b>{STAGE_DEFS[activeStage].name}.</b> {STAGE_DEFS[activeStage].tagline}
             {activeLevel === progress.currentLevel && <span className="olr-streak"> · серия {progress.streak}/4 без ошибок</span>}
           </div>
 
@@ -244,18 +266,18 @@ export function ThemePlay({
         )}
 
         <div className="thm-levels">
-          {themeLevels.map((l) => {
-            const s = levelStats(l);
-            const ui = LEVEL_UI[l];
-            const locked = s.state === "locked";
+          {stagesPresent.map((st, i) => {
+            const ss = stageStats(st);
+            const def = STAGE_DEFS[st];
+            const locked = ss.state === "locked";
             return (
-              <button key={l} className={`thm-lvl ${ui.color} ${s.state}`} disabled={locked && !TEST_OPEN_ALL_LEVELS} onClick={() => startLevel(l)} title={LEVEL_SPECS[l].tagline}>
-                <span className={`thm-lvl-badge ${ui.color}`}>{l}{locked && !TEST_OPEN_ALL_LEVELS && <i className="thm-lvl-lock">🔒</i>}</span>
-                <span className="thm-lvl-name">{ui.name}</span>
-                <span className="thm-lvl-desc">{LEVEL_SPECS[l].tagline}</span>
-                <span className="thm-lvl-count">{s.done} из {s.total} заданий</span>
-                {s.state === "current" && <span className="thm-lvl-here">● Сейчас вы здесь</span>}
-                {s.state === "passed" && <span className="thm-lvl-here passed">✓ Пройдено</span>}
+              <button key={st} className={`thm-lvl ${def.color} ${ss.state}`} disabled={locked && !TEST_OPEN_ALL_LEVELS} onClick={() => startStage(st)} title={def.tagline}>
+                <span className={`thm-lvl-badge ${def.color}`}>{i + 1}{locked && !TEST_OPEN_ALL_LEVELS && <i className="thm-lvl-lock">🔒</i>}</span>
+                <span className="thm-lvl-name">{def.name}</span>
+                <span className="thm-lvl-desc">{def.tagline}</span>
+                <span className="thm-lvl-count">{ss.done} из {ss.total} заданий</span>
+                {ss.state === "current" && <span className="thm-lvl-here">● Сейчас вы здесь</span>}
+                {ss.state === "passed" && <span className="thm-lvl-here passed">✓ Пройдено</span>}
               </button>
             );
           })}

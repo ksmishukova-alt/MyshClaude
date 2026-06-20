@@ -135,6 +135,24 @@ export const LEVEL_SPECS: Record<OlympiadLevel, LevelSpec> = {
 };
 
 /**
+ * СТАДИИ (детский интерфейс, A+C). Уровни L1–L6 — внутренний движок опоры,
+ * ребёнку же показываем 3 понятные стадии «Учусь → Тренируюсь → Решаю сам».
+ * Опора убывает адаптивно (clean-серия → уровень выше внутри стадии).
+ */
+export type ThemeStage = "learn" | "train" | "solo";
+export const THEME_STAGES: ThemeStage[] = ["learn", "train", "solo"];
+export const STAGE_DEFS: Record<ThemeStage, { name: string; tagline: string; color: string; levels: OlympiadLevel[] }> = {
+  learn: { name: "Учусь", tagline: "Разбираем метод на типовых задачах с опорой.", color: "green", levels: ["L1", "L2"] },
+  train: { name: "Тренируюсь", tagline: "Задачи посложнее, опора убывает — решаешь сам.", color: "blue", levels: ["L3", "L4"] },
+  solo: { name: "Решаю сам", tagline: "Олимпиадный формат: чистый лист и проверка методиста.", color: "pink", levels: ["L5", "L6"] },
+};
+export function levelToStage(l: OlympiadLevel): ThemeStage {
+  if (l === "L1" || l === "L2") return "learn";
+  if (l === "L3" || l === "L4") return "train";
+  return "solo";
+}
+
+/**
  * Дружелюбные названия уровней для детских карточек (макеты) +
  * цветовой класс узла. Цвета берут палитру маскота: L1 зелёный … L5 розовый.
  */

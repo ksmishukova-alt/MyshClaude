@@ -286,6 +286,9 @@
 .olr-input.sm { inline-size: 88px; margin: 0; padding: 8px 10px; text-align: center; font-weight: 800; }
 .olr-levelstep { border: 0; cursor: pointer; font-family: inherit; }
 .olr-levelstep.ahead { opacity: .85; }
+/* Широкий чип-стадия (Учусь/Тренируюсь/Решаю сам) вместо квадрата уровня */
+.olr-levelstep.wide { inline-size: auto; block-size: auto; min-block-size: 36px; border-radius: 999px; padding: 8px 16px; }
+.olr-levelstep.wide .olr-levelstep-id { font-size: clamp(12px,1.35vw,15px); font-weight: 800; }
 
 .tpl-lead { color: #4a5775; font-weight: 600; margin-bottom: 8px; }
 .tpl-body { font-size: clamp(15px,1.6vw,19px); line-height: 2.1; color: #1a2550; font-weight: 600; }

@@ -520,20 +520,86 @@ const ZP_HINTS = [
   "Сравни с 100 — на сколько не хватает?",
   "Один зверь добавляет 4 − 2 = 2 ноги. Раздели разницу на 2.",
 ];
-const HEADS_LEGS_V2: OlympiadProblemV2[] = (["L1", "L2", "L3", "L4", "L5"] as const).map((lvl, i) => ({
-  id: `hl-${lvl.toLowerCase()}-1`,
-  themeId: "heads-legs",
-  level: lvl,
-  title: "Звери и птицы",
-  statement: ZP_STATEMENT,
-  expectedAnswer: "20 зверей, 10 птиц",
-  acceptedAnswers: ["20 и 10", "20 зверей 10 птиц", "зверей 20 птиц 10"],
-  hints: ZP_HINTS,
-  rewardStars: [15, 18, 22, 28, 40][i],
-  skillTags: ["метод предположения", "уравнивание"],
-  assumption: ZVERI_PTICY_ASSUMPTION,
-  breakdown: ZVERI_PTICY_BREAKDOWN,
-}));
+type Kind = { key: string; label: string; countLabel: string; one: string; icon: string; legs: number };
+/** Построить задачу метода предположения с авто-разбором (big — у кого ног больше). */
+function mkHL(o: {
+  id: string; level: OlympiadLevel; reward: number; title: string; statement: string;
+  big: Kind; small: Kind; heads: number; legs: number;
+}): OlympiadProblemV2 {
+  const { big, small, heads, legs } = o;
+  const trial = heads * small.legs;
+  const gap = legs - trial;
+  const delta = big.legs - small.legs;
+  const bigC = gap / delta;
+  const smallC = heads - bigC;
+  return {
+    id: o.id, themeId: "heads-legs", level: o.level, title: o.title, statement: o.statement,
+    expectedAnswer: `${bigC} ${big.countLabel}, ${smallC} ${small.countLabel}`,
+    acceptedAnswers: [`${bigC} и ${smallC}`, `${bigC} ${big.countLabel} ${smallC} ${small.countLabel}`],
+    hints: [
+      `Представь, что все ${heads} — ${small.label} (у них ног меньше). Сколько тогда ног?`,
+      `Сравни с ${legs} — на сколько не хватает?`,
+      `Один «${big.one}» добавляет ${big.legs} − ${small.legs} = ${delta}. Раздели разницу на ${delta}.`,
+    ],
+    rewardStars: o.reward,
+    skillTags: ["метод предположения", "уравнивание"],
+    assumption: {
+      participants: [
+        { key: big.key, label: big.label, countLabel: big.countLabel, one: big.one, icon: big.icon, legs: big.legs },
+        { key: small.key, label: small.label, countLabel: small.countLabel, one: small.one, icon: small.icon, legs: small.legs },
+      ],
+      totalHeads: heads, totalLegs: legs, legUnit: "ног", headUnit: "голов",
+    },
+    breakdown: {
+      known: `${heads} голов, ${legs} ног. У «${big.one}» ${big.legs}, у «${small.one}» ${small.legs}.`,
+      idea: `Представим, что все — ${small.label} (у них ног меньше), и сравним с ${legs}.`,
+      steps: [
+        `Все ${heads} — ${small.label}: ${heads} × ${small.legs} = ${trial} ног.`,
+        `Не хватает: ${legs} − ${trial} = ${gap} ног.`,
+        `«${big.one}» добавляет ${big.legs} − ${small.legs} = ${delta}: ${gap} ÷ ${delta} = ${bigC}.`,
+        `«${small.label}»: ${heads} − ${bigC} = ${smallC}.`,
+      ],
+      writtenSolution: `Все ${small.label} → ${trial} ног. Не хватает ${gap}. Каждый «${big.one}» добавляет ${delta}: ${gap} ÷ ${delta} = ${bigC}, ${heads} − ${bigC} = ${smallC}.`,
+      answer: `${bigC} ${big.countLabel} и ${smallC} ${small.countLabel}.`,
+      selfCheck: `${bigC} × ${big.legs} + ${smallC} × ${small.legs} = ${legs} ног, ${bigC} + ${smallC} = ${heads} голов. Сходится!`,
+    },
+  };
+}
+
+const K = {
+  zveri: { key: "zveri", label: "звери", countLabel: "зверей", one: "зверь", icon: "🦁", legs: 4 },
+  ptici: { key: "ptici", label: "птицы", countLabel: "птиц", one: "птица", icon: "🐦", legs: 2 },
+  kury: { key: "kury", label: "куры", countLabel: "кур", one: "курица", icon: "🐔", legs: 2 },
+  kroliki: { key: "kroliki", label: "кролики", countLabel: "кроликов", one: "кролик", icon: "🐰", legs: 4 },
+  gusi: { key: "gusi", label: "гуси", countLabel: "гусей", one: "гусь", icon: "🦢", legs: 2 },
+  ovcy: { key: "ovcy", label: "овцы", countLabel: "овец", one: "овца", icon: "🐑", legs: 4 },
+  zhuki: { key: "zhuki", label: "жуки", countLabel: "жуков", one: "жук", icon: "🪲", legs: 6 },
+  pauki: { key: "pauki", label: "пауки", countLabel: "пауков", one: "паук", icon: "🕷️", legs: 8 },
+};
+
+// Лента «Головы и ноги»: РАЗНЫЕ задачи растущей сложности (A+C).
+// Стадии: L1–L2 «Учусь», L3–L4 «Тренируюсь», L5 «Решаю сам». Опора убывает по уровню.
+const HEADS_LEGS_V2: OlympiadProblemV2[] = [
+  {
+    id: "hl-l1-1", themeId: "heads-legs", level: "L1", title: "Звери и птицы",
+    statement: ZP_STATEMENT, expectedAnswer: "20 зверей, 10 птиц",
+    acceptedAnswers: ["20 и 10", "20 зверей 10 птиц", "зверей 20 птиц 10"],
+    hints: ZP_HINTS, rewardStars: 15, skillTags: ["метод предположения", "уравнивание"],
+    assumption: ZVERI_PTICY_ASSUMPTION, breakdown: ZVERI_PTICY_BREAKDOWN,
+  },
+  mkHL({ id: "hl-l2-1", level: "L2", reward: 18, title: "Куры и кролики",
+    statement: "Во дворе куры и кролики. Всего 8 голов и 22 ноги. Сколько кур и сколько кроликов?",
+    big: K.kroliki, small: K.kury, heads: 8, legs: 22 }),
+  mkHL({ id: "hl-l3-1", level: "L3", reward: 22, title: "Овцы и гуси",
+    statement: "На лугу пасутся овцы (4 ноги) и гуси (2 ноги). Всего 10 голов и 28 ног. Сколько овец и сколько гусей?",
+    big: K.ovcy, small: K.gusi, heads: 10, legs: 28 }),
+  mkHL({ id: "hl-l4-1", level: "L4", reward: 28, title: "Пауки и жуки",
+    statement: "В коробке пауки (8 ног) и жуки (6 ног). Всего 12 насекомых и 84 ноги. Сколько пауков и сколько жуков?",
+    big: K.pauki, small: K.zhuki, heads: 12, legs: 84 }),
+  mkHL({ id: "hl-l5-1", level: "L5", reward: 40, title: "Пауки и жуки (листочек)",
+    statement: "В террариуме пауки (8 ног) и жуки (6 ног). Всего 20 голов и 136 ног. Сколько каждого? Реши на листочке, сфотографируй и впиши ответ.",
+    big: K.pauki, small: K.zhuki, heads: 20, legs: 136 }),
+];
 
 const BANK: Record<string, OlympiadProblemV2> = {};
 // HEADS_LEGS_V2 (по методу предположения) перекрывает старые демо-id того же уровня.
