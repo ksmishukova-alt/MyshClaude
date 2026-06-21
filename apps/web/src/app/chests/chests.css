@@ -1,22 +1,95 @@
 .ch-stage{inline-size:100dvw;min-block-size:100dvh;background-image:linear-gradient(180deg,rgba(143,208,255,.1),rgba(154,212,114,.06)),url('/myshmat-assets/background.png');background-size:cover;background-position:center;padding:clamp(16px,3vw,40px);display:flex;justify-content:center;overflow-y:auto}
-.ch-wrap{inline-size:min(100%,760px)}
+.ch-wrap{inline-size:min(100%,860px)}
 .ch-top{display:flex;align-items:center;gap:14px;margin-bottom:clamp(10px,1.4vw,16px)}
 .ch-back{background:rgba(255,255,255,.92);border-radius:999px;padding:9px 16px;font-weight:700;color:var(--blue,#2E8BE6);text-decoration:none;box-shadow:0 6px 16px rgba(37,75,131,.12);font-size:clamp(13px,1.4vw,16px)}
 .ch-top h1{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(22px,3vw,36px)}
 .ch-intro{background:rgba(255,255,255,.85);border-radius:16px;padding:clamp(11px,1.5vw,16px);color:#4a5775;font-weight:600;margin-bottom:clamp(16px,2vw,24px);font-size:clamp(13px,1.5vw,16px)}
-.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(150px,30vw,220px),1fr));gap:clamp(14px,2vw,22px)}
-.ch-card{border:0;cursor:pointer;font-family:inherit;border-radius:24px;padding:clamp(20px,2.6vw,32px);display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 12px 30px rgba(37,75,131,.16);transition:transform .18s,box-shadow .18s;min-block-size:clamp(150px,20vw,200px);justify-content:center}
-.ch-basic{background:linear-gradient(160deg,#f5d9b0,#d99a5c)}
-.ch-silver{background:linear-gradient(160deg,#e8eef3,#b5c2d0)}
-.ch-gold{background:linear-gradient(160deg,#ffe79a,#f3b73f)}
-.ch-secret{background:linear-gradient(160deg,#d6c3ff,#9a78f0)}
-.ch-card:hover:not(:disabled){transform:translateY(-5px) scale(1.03);box-shadow:0 18px 38px rgba(37,75,131,.24)}
-.ch-card:disabled{cursor:default}
-.ch-emoji{font-size:clamp(44px,7vw,72px);line-height:1;transition:transform .3s}
-.ch-card.open .ch-emoji{animation:pop .5s ease}
-@keyframes pop{0%{transform:scale(.4) rotate(-12deg)}60%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
-.ch-title{font-family:var(--font-display,system-ui);font-weight:800;color:#3a2a10;font-size:clamp(15px,1.8vw,20px);text-align:center;line-height:1.1}
-.ch-secret .ch-title{color:#3a2060}
-.ch-hint{color:rgba(60,50,30,.6);font-weight:600;font-size:clamp(11px,1.3vw,14px)}
-.ch-reward{background:rgba(255,255,255,.85);border-radius:12px;padding:8px 14px;font-weight:800;color:#2fad50;font-size:clamp(12px,1.4vw,16px);text-align:center;animation:fade .4s ease}
-@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(170px,30vw,230px),1fr));gap:clamp(16px,2.2vw,26px)}
+
+/* ── Карточка сундука ── */
+.ch-card{position:relative;border-radius:26px;padding:clamp(16px,2vw,24px) clamp(14px,1.8vw,20px) clamp(14px,1.8vw,20px);display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.7);box-shadow:0 14px 34px rgba(37,75,131,.16);backdrop-filter:blur(2px);overflow:hidden}
+.ch-basic{background:radial-gradient(120% 90% at 50% 0,#fff4e6,#f3dcc0 70%)}
+.ch-silver{background:radial-gradient(120% 90% at 50% 0,#fbfdff,#dde7f0 70%)}
+.ch-gold{background:radial-gradient(120% 90% at 50% 0,#fff7d6,#ffe9a8 70%)}
+.ch-secret{background:radial-gradient(120% 90% at 50% 0,#efe6ff,#d8c6fb 70%)}
+.ch-card.locked{filter:saturate(.7)}
+
+.ch-tier-tag{align-self:center;font-weight:800;font-size:clamp(10px,1.1vw,12px);letter-spacing:.06em;text-transform:uppercase;padding:3px 12px;border-radius:999px;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.12)}
+.ch-basic .ch-tier-tag{background:linear-gradient(90deg,#cd7f32,#a65e1e)}
+.ch-silver .ch-tier-tag{background:linear-gradient(90deg,#9fb2c4,#76889a);color:#fff}
+.ch-gold .ch-tier-tag{background:linear-gradient(90deg,#f3b73f,#d98a0b)}
+.ch-secret .ch-tier-tag{background:linear-gradient(90deg,#a78bfa,#7c3aed)}
+
+.ch-chest-btn{position:relative;border:0;background:transparent;cursor:pointer;padding:8px 0 2px;inline-size:100%;display:flex;justify-content:center;min-block-size:clamp(120px,17vw,150px);align-items:center}
+.ch-chest-btn:disabled{cursor:default}
+.ch-card:not(.locked):not(.open) .ch-chest-btn:hover .chest{transform:translateY(-4px) scale(1.04)}
+
+/* ── Сам сундук (CSS-арт) ── */
+.chest{position:relative;inline-size:clamp(104px,15vw,132px);block-size:clamp(96px,14vw,122px);transition:transform .2s}
+.chest-box{position:absolute;inset:0;z-index:2}
+.chest-base{position:absolute;left:0;right:0;bottom:0;block-size:62%;border-radius:14px 14px 16px 16px;box-shadow:inset 0 -8px 14px rgba(0,0,0,.22),inset 0 4px 6px rgba(255,255,255,.35),0 8px 16px rgba(0,0,0,.22)}
+.chest-lid{position:absolute;left:-2%;right:-2%;top:0;block-size:46%;border-radius:16px 16px 8px 8px;transform-origin:50% 100%;transition:transform .55s cubic-bezier(.5,-0.3,.3,1.4);box-shadow:inset 0 4px 8px rgba(255,255,255,.45),inset 0 -6px 10px rgba(0,0,0,.2),0 6px 12px rgba(0,0,0,.18);z-index:3}
+.chest-band{position:absolute;left:50%;top:-6%;transform:translateX(-50%);inline-size:18%;block-size:112%;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.5),rgba(0,0,0,.18));opacity:.55}
+.chest-lockplate{position:absolute;left:50%;top:-14%;transform:translateX(-50%);inline-size:30%;block-size:46%;border-radius:7px;background:linear-gradient(160deg,#ffe9a8,#caa23c);box-shadow:0 2px 5px rgba(0,0,0,.3),inset 0 1px 2px rgba(255,255,255,.7);display:grid;place-items:center;z-index:4}
+.chest-keyhole{inline-size:24%;block-size:42%;background:#5a3c12;border-radius:50% 50% 30% 30%;box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
+/* металл/дерево по тиру */
+.ch-basic .chest-base,.ch-basic .chest-lid{background:linear-gradient(160deg,#e7a86a,#a8632b)}
+.ch-silver .chest-base,.ch-silver .chest-lid{background:linear-gradient(160deg,#eef3f8,#9fb0c0)}
+.ch-gold .chest-base,.ch-gold .chest-lid{background:linear-gradient(160deg,#ffdf7a,#e0a219)}
+.ch-secret .chest-base,.ch-secret .chest-lid{background:linear-gradient(160deg,#c3a9fb,#7c4fd6)}
+
+/* свечение «манит» (для готовых) */
+.chest-glow{position:absolute;inset:-22%;border-radius:50%;z-index:0;background:radial-gradient(circle,rgba(255,234,150,.85),rgba(255,234,150,0) 65%);opacity:0;filter:blur(4px)}
+.ch-gold .chest-glow{background:radial-gradient(circle,rgba(255,224,120,.95),rgba(255,224,120,0) 65%)}
+.ch-silver .chest-glow{background:radial-gradient(circle,rgba(214,230,245,.95),rgba(214,230,245,0) 65%)}
+.ch-secret .chest-glow{background:radial-gradient(circle,rgba(190,160,255,.95),rgba(190,160,255,0) 65%)}
+.ch-card:not(.locked):not(.open) .chest-glow{opacity:1;animation:ch-glow 1.8s ease-in-out infinite}
+@keyframes ch-glow{0%,100%{opacity:.45;transform:scale(.92)}50%{opacity:.95;transform:scale(1.06)}}
+
+/* «рвётся открыться» — лёгкое подрагивание готового сундука */
+.ch-card:not(.locked):not(.open) .chest-box{animation:ch-rattle 2.4s ease-in-out infinite}
+@keyframes ch-rattle{0%,86%,100%{transform:rotate(0)}90%{transform:rotate(-2.5deg)}94%{transform:rotate(2.5deg)}}
+
+/* блёстки */
+.chest-sparkles{position:absolute;inset:-12%;z-index:1;pointer-events:none}
+.chest-sparkles i{position:absolute;inline-size:8px;block-size:8px;background:radial-gradient(circle,#fff,rgba(255,255,255,0) 70%);border-radius:50%;opacity:0}
+.chest-sparkles i::before{content:"✦";position:absolute;inset:-6px;color:#fff;font-size:12px;text-shadow:0 0 6px #ffe89a}
+.ch-card:not(.locked):not(.open) .chest-sparkles i{animation:ch-spark 2.2s ease-in-out infinite;animation-delay:calc(var(--i)*.28s)}
+.chest-sparkles i:nth-child(1){left:6%;top:18%}.chest-sparkles i:nth-child(2){right:4%;top:30%}.chest-sparkles i:nth-child(3){left:14%;bottom:14%}.chest-sparkles i:nth-child(4){right:12%;bottom:22%}.chest-sparkles i:nth-child(5){left:46%;top:-6%}.chest-sparkles i:nth-child(6){right:30%;top:6%}
+@keyframes ch-spark{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1.1)}}
+
+/* ── ЗАКРЫТЫЙ: цепи и замок ── */
+.ch-chains{position:absolute;inset:0;z-index:6;pointer-events:none}
+.ch-chains span{position:absolute;top:-6%;bottom:-6%;inline-size:12px;background:repeating-linear-gradient(180deg,#cfd6df 0 7px,#8a96a6 7px 14px);border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.3),inset 0 0 0 2px rgba(255,255,255,.25)}
+.ch-chains span:nth-child(1){left:30%;transform:rotate(8deg)}
+.ch-chains span:nth-child(2){right:30%;transform:rotate(-8deg)}
+.ch-padlock{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);font-size:clamp(26px,4vw,38px);filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
+.ch-card.locked .chest-box{animation:ch-struggle 3.2s ease-in-out infinite}
+@keyframes ch-struggle{0%,70%,100%{transform:translateY(0) rotate(0)}80%{transform:translateY(-2px) rotate(-1.5deg)}88%{transform:translateY(-2px) rotate(1.5deg)}}
+
+/* ── ОТКРЫТИЕ ── */
+.ch-card.open .chest-lid{transform:rotateX(-118deg)}
+.chest-burst{position:absolute;inset:-30%;z-index:1;border-radius:50%;opacity:0;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,236,160,.6) 35%,rgba(255,236,160,0) 70%)}
+.ch-card.open .chest-burst{animation:ch-burst .7s ease-out forwards}
+@keyframes ch-burst{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(1.3)}}
+
+/* карточки наград вылетают вверх веером */
+.ch-rewards{position:absolute;left:0;right:0;top:-6%;z-index:7;display:flex;justify-content:center;gap:8px;pointer-events:none}
+.ch-reward-chip{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border-radius:13px;padding:8px 10px;box-shadow:0 8px 18px rgba(37,75,131,.28);border:2px solid #ffe09e;opacity:0;transform:translateY(20px) scale(.6);animation:ch-fly .55s cubic-bezier(.2,.8,.3,1.3) forwards;animation-delay:var(--d)}
+.ch-reward-chip{transform:translate(calc(var(--n)*6px),20px) scale(.6) rotate(calc(var(--n)*5deg))}
+@keyframes ch-fly{to{opacity:1;transform:translate(calc(var(--n)*42px),-22px) scale(1) rotate(calc(var(--n)*7deg))}}
+.ch-reward-ic{font-size:clamp(20px,2.6vw,28px);line-height:1}
+.ch-reward-lb{font-size:clamp(10px,1.1vw,12px);font-weight:800;color:#33415f;white-space:nowrap}
+
+/* ── Подписи ── */
+.ch-title{font-family:var(--font-display,system-ui);font-weight:800;font-size:clamp(15px,1.8vw,20px);text-align:center;line-height:1.1;margin-top:4px}
+.ch-basic .ch-title{color:#7a4818}.ch-silver .ch-title{color:#3d4a59}.ch-gold .ch-title{color:#8a5a08}.ch-secret .ch-title{color:#4a2a80}
+.ch-cta{color:rgba(50,50,60,.6);font-weight:700;font-size:clamp(11px,1.3vw,14px)}
+.ch-lockmsg{color:#8a6a3a;font-weight:700;font-size:clamp(10px,1.2vw,13px);text-align:center;line-height:1.3}
+.ch-secret .ch-lockmsg{color:#6a4aa0}
+.ch-done{color:var(--green-d,#2fad50);font-weight:800;font-size:clamp(12px,1.4vw,15px)}
+
+@media (prefers-reduced-motion: reduce){
+  .chest-glow,.chest-box,.chest-sparkles i{animation:none!important}
+  .ch-reward-chip{animation-duration:.01s}
+}

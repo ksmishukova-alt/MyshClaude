@@ -20,13 +20,29 @@
 
 .album-page{background:#fffdf8;border-radius:18px;padding:clamp(12px,1.8vw,22px);box-shadow:inset 0 2px 8px rgba(180,140,60,.1)}
 .album-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(8px,1.2vw,14px)}
-.album-cell{aspect-ratio:1;border-radius:16px;display:grid;place-items:center;font-size:clamp(22px,3.4vw,40px);box-shadow:0 4px 12px rgba(37,75,131,.08)}
-.album-cell.earned{background:#fff;transform:rotate(-2deg);transition:transform .15s}
-.album-cell.earned:nth-child(even){transform:rotate(2deg)}
-.album-cell.earned:nth-child(3n){transform:rotate(-1deg)}
-.album-cell.earned:hover{transform:scale(1.12) rotate(0)}
-.album-cell.locked{background:repeating-linear-gradient(45deg,rgba(255,255,255,.5),rgba(255,255,255,.5) 6px,rgba(245,230,200,.5) 6px,rgba(245,230,200,.5) 12px)}
-.album-cell.locked span{color:#c9b38a;font-weight:800}
+.album-cell{aspect-ratio:1;border-radius:16px;display:grid;place-items:center;padding:7%}
+.album-cell.locked{background:repeating-linear-gradient(45deg,rgba(255,255,255,.45),rgba(255,255,255,.45) 6px,rgba(245,230,200,.45) 6px,rgba(245,230,200,.45) 12px);border:2px dashed rgba(201,179,138,.6);box-shadow:inset 0 2px 6px rgba(180,140,60,.12)}
+.album-q{color:#c9b38a;font-weight:900;font-size:clamp(20px,3vw,34px);opacity:.7}
+
+/* ── die-cut стикер: белый вырубленный кант + глянец + загнутый уголок ── */
+.sticker{position:relative;inline-size:100%;aspect-ratio:1;border-radius:26%;display:grid;place-items:center;background:#fff;box-shadow:0 0 0 5px #fff,0 7px 13px rgba(37,75,131,.26),inset 0 -6px 12px rgba(0,0,0,.06);transition:transform .15s}
+.sticker-emoji{font-size:clamp(24px,3.6vw,42px);line-height:1;filter:drop-shadow(0 2px 1px rgba(0,0,0,.18));z-index:1}
+.sticker-gloss{position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 80% at 28% 18%,rgba(255,255,255,.85),rgba(255,255,255,0) 46%);pointer-events:none;z-index:2}
+.sticker::after{content:"";position:absolute;right:7%;bottom:7%;inline-size:24%;block-size:24%;background:linear-gradient(135deg,rgba(0,0,0,.13),rgba(0,0,0,0) 60%);border-bottom-right-radius:26%}
+/* разнообразные цветные подложки */
+.album-cell.earned:nth-child(8n+1) .sticker{background:radial-gradient(circle at 50% 36%,#fff,#ffe2ec)}
+.album-cell.earned:nth-child(8n+2) .sticker{background:radial-gradient(circle at 50% 36%,#fff,#dcecff)}
+.album-cell.earned:nth-child(8n+3) .sticker{background:radial-gradient(circle at 50% 36%,#fff,#e2f7e4)}
+.album-cell.earned:nth-child(8n+4) .sticker{background:radial-gradient(circle at 50% 36%,#fff,#fff0cf)}
+.album-cell.earned:nth-child(8n+5) .sticker{background:radial-gradient(circle at 50% 36%,#fff,#ede2ff)}
+.album-cell.earned:nth-child(8n+6) .sticker{background:radial-gradient(circle at 50% 36%,#fff,#d8f5f0)}
+.album-cell.earned:nth-child(8n+7) .sticker{background:radial-gradient(circle at 50% 36%,#fff,#ffe6da)}
+.album-cell.earned:nth-child(8n) .sticker{background:radial-gradient(circle at 50% 36%,#fff,#f2e6ff)}
+/* лёгкий разворот «как наклеено» */
+.album-cell.earned:nth-child(odd) .sticker{transform:rotate(-4deg)}
+.album-cell.earned:nth-child(even) .sticker{transform:rotate(3deg)}
+.album-cell.earned:nth-child(3n) .sticker{transform:rotate(-1.5deg)}
+.album-cell.earned:hover .sticker{transform:scale(1.13) rotate(0)}
 .album-page-num{text-align:center;margin-top:clamp(10px,1.4vw,16px);color:#b5740a;font-weight:700;font-size:clamp(12px,1.3vw,15px)}
 
 .album-dots{display:flex;justify-content:center;gap:8px;margin-top:clamp(12px,1.6vw,18px);flex-wrap:wrap}

@@ -51,7 +51,14 @@ export function StickerAlbum({
           <div className="album-grid">
             {pageStickers.map((s) => (
               <div key={s.id} className={`album-cell${s.earned ? " earned" : " locked"}`}>
-                <span>{s.earned ? s.emoji : "?"}</span>
+                {s.earned ? (
+                  <div className="sticker">
+                    <span className="sticker-emoji">{s.emoji}</span>
+                    <span className="sticker-gloss" aria-hidden />
+                  </div>
+                ) : (
+                  <span className="album-q">?</span>
+                )}
               </div>
             ))}
           </div>
