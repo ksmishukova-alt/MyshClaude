@@ -52,7 +52,7 @@ export function LoginScreen({ profiles }: { profiles: Profile[] }) {
         <div className="lg-profiles">
           {profiles.map((p) => (
             <button key={p.id} className="lg-profile" onClick={() => setPicked(p)}>
-              <span className="lg-avatar">🐭</span>
+              <span className="lg-avatar" aria-hidden />
               <span className="lg-name">{p.name}</span>
               <span className="lg-grade">{p.grade} класс</span>
             </button>
@@ -68,7 +68,7 @@ export function LoginScreen({ profiles }: { profiles: Profile[] }) {
       <button className="lg-back" onClick={() => { setPicked(null); setPin(""); setError(false); }}>
         ← Назад
       </button>
-      <div className="lg-avatar big">🐭</div>
+      <div className="lg-avatar big" aria-hidden />
       <h1 className="lg-title">Привет, {picked.name}!</h1>
       <p className="lg-sub">Введи свой ПИН-код</p>
 
