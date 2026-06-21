@@ -40,18 +40,18 @@ export function WorldRow({ world }: { world: WorldState }) {
         <h3>Сундуки</h3>
         <p>{locked ? "Награда после Daily ждёт!" : "Открой награды"}</p>
         <div className="closed" />
-        <img className="mini-art" src="/myshmat-assets/chest-large.png" alt="" aria-hidden="true" />
+        <img className="mini-art" src="/myshmat-assets/chest-large.png" alt="" aria-hidden="true" loading="lazy" decoding="async" />
       </CardOrLink>
 
       {/* Дуэли — на MVP всегда «скоро», без текста */}
       <article className="mini card duel">
         <h3>Дуэли</h3>
-        <img className="mini-art" src="/myshmat-assets/duel-large.png" alt="" aria-hidden="true" />
+        <img className="mini-art" src="/myshmat-assets/duel-large.png" alt="" aria-hidden="true" loading="lazy" decoding="async" />
       </article>
 
       <CardOrLink locked={locked} href="/rewards" className={`mini card trophy${lockedClass}`}>
         <h3>Награды</h3>
-        <img className="mini-art" src="/myshmat-assets/trophy-large.png" alt="" aria-hidden="true" />
+        <img className="mini-art" src="/myshmat-assets/trophy-large.png" alt="" aria-hidden="true" loading="lazy" decoding="async" />
       </CardOrLink>
     </section>
   );

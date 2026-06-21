@@ -56,23 +56,27 @@ export async function POST(req: Request) {
   if (sb) {
     const { data } = await sb
       .from("child_profiles")
-      .select("id,pin_hash")
+      .select("id,pin_hash,pin")
       .eq("id", body.childId)
       .maybeSingle();
     if (!data?.id) {
       return NextResponse.json({ ok: false, reason: "not-found" });
     }
     const hash = (data as { pin_hash?: string | null }).pin_hash;
+    const plainPin = (data as { pin?: string | null }).pin;
     let ok = false;
     if (hash) {
-      // настоящая проверка bcrypt
+      // настоящая проверка bcrypt (если задан хэш)
       try {
         ok = await bcrypt.compare(body.pin, hash);
       } catch {
         ok = false;
       }
+    } else if (plainPin) {
+      // обычный PIN из колонки pin (пилот: 4 цифры, низкий риск)
+      ok = body.pin === plainPin;
     } else {
-      // pin_hash не задан → демо-PIN
+      // ни хэша, ни pin → демо-PIN
       ok = body.pin === DEMO_PIN;
     }
     return ok

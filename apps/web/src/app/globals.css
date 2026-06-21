@@ -206,12 +206,16 @@ body:has(.stage){overflow:hidden;height:100%}
   z-index:3!important;
 }
 .mini.chest .mini-art{
-  right:clamp(12px,1.5cqw,24px)!important;
-  top:clamp(8px,1.2cqh,16px)!important;
-  inline-size:clamp(165px,46cqw,254px)!important;
-  width:clamp(165px,46cqw,254px)!important;
-  block-size:92%!important;
-  height:92%!important;
+  right:clamp(4px,.8cqw,12px)!important;
+  top:auto!important;
+  bottom:clamp(2px,.5cqh,8px)!important;
+  inline-size:auto!important;
+  width:auto!important;
+  block-size:auto!important;
+  height:auto!important;
+  max-inline-size:50%!important;
+  max-block-size:84%!important;
+  object-position:center right!important;
 }
 .mini.duel .mini-art,.mini.trophy .mini-art{
   right:clamp(10px,1.25cqw,18px)!important;
