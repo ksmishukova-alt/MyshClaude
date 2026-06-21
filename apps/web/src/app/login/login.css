@@ -42,4 +42,18 @@
 @media (max-height:680px){
   .lg-stage{justify-content:flex-start;overflow-y:auto}
 }
-@media (prefers-reduced-motion:reduce){.lg-profile{transition:none}}
+/* ── статус после ввода PIN ── */
+.lg-status{display:flex;align-items:center;justify-content:center;gap:10px;min-block-size:clamp(120px,18vw,160px);font-family:var(--font-display,system-ui);font-weight:800;font-size:clamp(16px,1.9vw,22px);color:#1F6FD0}
+.lg-status.ok{color:var(--green-d,#2fad50);animation:lg-pop .4s cubic-bezier(.2,.8,.3,1.4)}
+.lg-spinner{inline-size:clamp(26px,3.2vw,36px);block-size:clamp(26px,3.2vw,36px);border-radius:50%;border:4px solid #d7e3f5;border-top-color:#1F6FD0;animation:lg-spin .7s linear infinite}
+@keyframes lg-spin{to{transform:rotate(360deg)}}
+.lg-check{display:grid;place-items:center;inline-size:clamp(30px,3.6vw,40px);block-size:clamp(30px,3.6vw,40px);border-radius:50%;background:linear-gradient(180deg,#7be58a,#33b257);color:#fff;font-size:clamp(18px,2.2vw,24px);box-shadow:0 5px 12px rgba(51,178,87,.4)}
+@keyframes lg-pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+/* точки пульсируют при проверке, зеленеют при успехе */
+.lg-dots.checking span.on{background:linear-gradient(180deg,#5cb0f2,#1F6FD0);animation:lg-pulse .9s ease-in-out infinite}
+@keyframes lg-pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.25);opacity:1}}
+.lg-dots.ok span{background:linear-gradient(180deg,#7be58a,#33b257)!important;transform:scale(1.15)}
+/* зелёное кольцо и «прыжок» аватара при успехе */
+.lg-avatar.big.ok{box-shadow:0 6px 14px rgba(0,0,0,.16),0 0 0 4px #33b257;animation:lg-pop .5s cubic-bezier(.2,.8,.3,1.5)}
+
+@media (prefers-reduced-motion:reduce){.lg-profile,.lg-spinner,.lg-dots.checking span.on{animation:none;transition:none}}
