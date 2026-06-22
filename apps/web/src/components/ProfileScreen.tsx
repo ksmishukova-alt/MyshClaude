@@ -12,6 +12,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { PetCompanion } from "./PetCompanion";
 
 type Slot = "hat" | "eyes" | "neck" | "color";
 interface Item { id: string; slot: Slot; name: string; emoji?: string; cost: number; hue?: number; swatch?: string }
@@ -42,9 +43,9 @@ const cssVars = (o: Record<string, string | number>) => o as unknown as CSSPrope
 export interface ThemeRow { id: string; title: string; icon: string; stage: string; color: string; badge: boolean }
 
 export function ProfileScreen({
-  childId, name, grade, baseStars, themes,
+  childId, name, grade, baseStars, themes, petXp,
 }: {
-  childId: string; name: string; grade: number; baseStars: number; themes: ThemeRow[];
+  childId: string; name: string; grade: number; baseStars: number; themes: ThemeRow[]; petXp: number;
 }) {
   const key = `mysh_mascot_${childId}`;
   const [mounted, setMounted] = useState(false);
@@ -119,6 +120,9 @@ export function ProfileScreen({
             <span className="pf-class">{grade} класс</span>
           </div>
         </section>
+
+        {/* Питомец-тамагочи */}
+        <PetCompanion childId={childId} petXp={petXp} />
 
         {/* Гардероб / лавка */}
         <section className="pf-card">

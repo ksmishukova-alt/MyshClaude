@@ -3,6 +3,7 @@ import { fetchHomeData } from "@/lib/data";
 import { fetchThemes, fetchThemeProgressMap } from "@/lib/olympiad-data";
 import { getRewards } from "@/lib/mock-data";
 import { levelToStage, STAGE_DEFS } from "@/types/olympiad";
+import { THEME_STAGE_POINTS, BADGE_POINTS } from "@/lib/pet";
 import { ProfileScreen, type ThemeRow } from "@/components/ProfileScreen";
 import "./profile.css";
 
@@ -32,6 +33,15 @@ export default async function ProfilePage() {
 
   const { stars } = getRewards();
 
+  // Очки роста питомца: копятся из реального прогресса по темам (стадия + значок).
+  let petXp = 0;
+  for (const t of themes) {
+    const p = progress[t.id];
+    if (!p || p.state === "locked") continue;
+    petXp += THEME_STAGE_POINTS[levelToStage(p.currentLevel)] ?? 0;
+    if (p.badgeEarned) petXp += BADGE_POINTS;
+  }
+
   return (
     <ProfileScreen
       childId={childId}
@@ -39,6 +49,7 @@ export default async function ProfilePage() {
       grade={home.profile.grade}
       baseStars={stars}
       themes={rows}
+      petXp={petXp}
     />
   );
 }
