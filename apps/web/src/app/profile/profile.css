@@ -1,0 +1,69 @@
+.pf-stage{inline-size:100dvw;min-block-size:100dvh;background-image:linear-gradient(180deg,rgba(143,208,255,.12),rgba(154,212,114,.08)),url('/myshmat-assets/background.png');background-size:cover;background-position:center;padding:clamp(16px,3vw,40px);display:flex;justify-content:center;overflow-y:auto}
+.pf-wrap{inline-size:min(100%,720px);display:flex;flex-direction:column;gap:clamp(12px,1.6vw,18px)}
+.pf-top{display:flex;align-items:center;gap:14px}
+.pf-back{background:rgba(255,255,255,.92);border-radius:999px;padding:9px 16px;font-weight:700;color:var(--blue,#2E8BE6);text-decoration:none;box-shadow:0 6px 16px rgba(37,75,131,.12);font-size:clamp(13px,1.4vw,16px)}
+.pf-stars{margin-left:auto;background:#fff7e6;border:1px solid #ffe0a3;border-radius:999px;padding:7px 18px;color:#b5740a;font-weight:900;font-size:clamp(15px,1.7vw,20px);box-shadow:0 4px 10px rgba(214,160,30,.2)}
+
+/* ── Витрина маскота ── */
+.pf-hero{display:flex;align-items:center;gap:clamp(14px,2.4vw,30px);background:linear-gradient(180deg,#eaf4ff,#dcebff);border-radius:clamp(20px,2.4vw,30px);padding:clamp(16px,2.2vw,28px);box-shadow:0 14px 34px rgba(37,75,131,.16);border:1px solid rgba(255,255,255,.7)}
+.pf-mascot{position:relative;inline-size:clamp(120px,20vw,170px);block-size:clamp(120px,20vw,170px);flex:0 0 auto;display:grid;place-items:center}
+.pf-mascot-glow{position:absolute;inset:-8%;border-radius:50%;background:radial-gradient(circle,rgba(255,236,160,.8),transparent 65%);animation:pf-glow 3s ease-in-out infinite}
+@keyframes pf-glow{0%,100%{opacity:.5;transform:scale(.95)}50%{opacity:.95;transform:scale(1.05)}}
+.pf-mascot-img{position:relative;z-index:1;inline-size:100%;block-size:100%;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(60,90,160,.28))}
+.pf-wear{position:absolute;z-index:2;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));pointer-events:none}
+.pf-wear.hat{top:-2%;left:50%;transform:translateX(-50%) rotate(-6deg);font-size:clamp(34px,5.6vw,54px)}
+.pf-wear.eyes{top:30%;left:50%;transform:translateX(-50%);font-size:clamp(26px,4.2vw,40px)}
+.pf-wear.neck{bottom:18%;left:50%;transform:translateX(-46%);font-size:clamp(26px,4.4vw,42px)}
+.pf-id h1{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(26px,4vw,44px);line-height:1}
+.pf-class{display:inline-block;margin-top:8px;background:#fff;border-radius:999px;padding:4px 14px;font-weight:800;color:#2E8BE6;font-size:clamp(13px,1.5vw,16px);box-shadow:0 3px 8px rgba(37,75,131,.12)}
+
+/* ── Карточки-секции ── */
+.pf-card{background:rgba(255,255,255,.95);border-radius:clamp(18px,2vw,26px);padding:clamp(16px,2vw,24px);box-shadow:0 12px 28px rgba(37,75,131,.13);border:1px solid rgba(255,255,255,.7)}
+.pf-card h2{font-family:var(--font-display,system-ui);font-weight:800;color:#13315f;font-size:clamp(18px,2.1vw,24px)}
+.pf-hint{color:#647089;font-weight:600;font-size:clamp(12px,1.35vw,15px);margin:6px 0 12px;line-height:1.4}
+
+/* гардероб */
+.pf-slot{margin-bottom:clamp(10px,1.4vw,16px)}
+.pf-slot h3{font-weight:800;color:#41506f;font-size:clamp(13px,1.45vw,16px);margin-bottom:8px}
+.pf-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(92px,15vw,116px),1fr));gap:10px}
+.pf-item{cursor:pointer;font-family:inherit;border:2px solid #e3e9f3;background:#f7f9fd;border-radius:14px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .12s,border-color .12s,box-shadow .12s}
+.pf-item:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(37,75,131,.14)}
+.pf-item.owned{border-color:#cfe0f5}
+.pf-item.on{border-color:var(--green,#42C263);background:#e9f9ec;box-shadow:0 6px 14px rgba(66,194,99,.2)}
+.pf-item-prev{font-size:clamp(26px,3.6vw,38px);line-height:1;block-size:clamp(30px,4vw,42px);display:grid;place-items:center}
+.pf-swatch{inline-size:clamp(26px,3.4vw,34px);block-size:clamp(26px,3.4vw,34px);border-radius:50%;display:block;border:3px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+.pf-item-name{font-weight:700;color:#33415f;font-size:clamp(11px,1.2vw,13px);text-align:center;line-height:1.15}
+.pf-item-tag{font-weight:800;font-size:clamp(11px,1.2vw,13px);color:#b5740a}
+.pf-item.owned .pf-item-tag{color:#2E8BE6}
+.pf-item.on .pf-item-tag{color:var(--green-d,#2fad50)}
+
+/* прогресс по темам */
+.pf-themes{display:flex;flex-direction:column;gap:8px}
+.pf-theme{display:flex;align-items:center;gap:10px;background:#f5f8fd;border-radius:13px;padding:10px 13px;text-decoration:none;transition:background .12s,transform .12s}
+.pf-theme:hover{background:#eaf2fc;transform:translateX(2px)}
+.pf-theme-ic{font-size:clamp(20px,2.6vw,28px)}
+.pf-theme-name{font-weight:800;color:#1d2d63;font-size:clamp(14px,1.5vw,17px);flex:1}
+.pf-theme-stage{font-weight:800;font-size:clamp(11px,1.2vw,13px);color:#fff;padding:3px 11px;border-radius:999px}
+.pf-theme-stage.green{background:linear-gradient(90deg,#53ca5d,#2fad50)}
+.pf-theme-stage.blue{background:linear-gradient(90deg,#3FA0E8,#1F6FD0)}
+.pf-theme-stage.pink{background:linear-gradient(90deg,#ff61ad,#e9438b)}
+.pf-theme-badge{font-size:clamp(16px,2vw,22px)}
+.pf-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.pf-link{flex:1;min-inline-size:120px;text-align:center;background:#eef6ff;border-radius:12px;padding:11px;font-weight:800;color:var(--blue-d,#1F6FD0);text-decoration:none;box-shadow:inset 0 0 0 1px #d6e6fb}
+.pf-link:hover{background:#e1efff}
+
+/* смена PIN */
+.pf-pinrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pf-pininput{inline-size:clamp(100px,18vw,140px);border:2px solid #e3e9f3;border-radius:12px;padding:11px 14px;font-family:inherit;font-size:clamp(15px,1.6vw,18px);font-weight:800;letter-spacing:.25em;text-align:center;color:#13315f}
+.pf-pininput:focus{outline:none;border-color:var(--blue,#2E8BE6)}
+.pf-save{border:0;cursor:pointer;font-family:inherit;font-weight:800;color:#fff;background:linear-gradient(180deg,#3FA0E8,#1F6FD0);border-radius:12px;padding:11px 22px;font-size:clamp(14px,1.5vw,17px);box-shadow:0 6px 14px rgba(31,111,208,.3)}
+.pf-save:disabled{background:#dde3ee;color:#aab3c6;box-shadow:none}
+.pf-pinmsg{margin-top:10px;font-weight:800;font-size:clamp(12px,1.35vw,15px)}
+.pf-pinmsg.ok{color:var(--green-d,#2fad50)}
+.pf-pinmsg.err{color:#d14d6e}
+.pf-pinmsg.saving{color:#647089}
+
+/* тост */
+.pf-toast{position:fixed;left:50%;bottom:clamp(20px,4vw,40px);transform:translateX(-50%);background:#13315f;color:#fff;font-weight:800;padding:12px 22px;border-radius:14px;box-shadow:0 12px 28px rgba(0,0,0,.3);z-index:50;animation:pf-toast .25s ease}
+@keyframes pf-toast{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+@media (prefers-reduced-motion:reduce){.pf-mascot-glow{animation:none}}

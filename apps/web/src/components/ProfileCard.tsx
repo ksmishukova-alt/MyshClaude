@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { ChildProfile } from "@/types/domain";
 
 export function ProfileCard({ profile }: { profile: ChildProfile }) {
@@ -15,11 +16,13 @@ export function ProfileCard({ profile }: { profile: ChildProfile }) {
 
   return (
     <div className="profile card" style={{ position: "relative" }}>
-      <div className="avatar" />
-      <div>
-        <b>{profile.name}</b>
-        <small>{profile.grade} класс</small>
-      </div>
+      <Link href="/profile" aria-label="Открыть профиль" style={{ display: "flex", alignItems: "center", gap: "inherit", textDecoration: "none", color: "inherit", flex: 1, minWidth: 0 }}>
+        <div className="avatar" />
+        <div>
+          <b>{profile.name}</b>
+          <small>{profile.grade} класс</small>
+        </div>
+      </Link>
       <button
         className="chev"
         onClick={() => setOpen((v) => !v)}
