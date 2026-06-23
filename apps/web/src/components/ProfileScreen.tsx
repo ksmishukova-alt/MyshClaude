@@ -1,44 +1,20 @@
 "use client";
 
 /**
- * Профиль ребёнка — витрина «Я и мой маскот» (активный флоу):
- *  - крупный маскот с надетыми нарядами (наряды — CSS-оверлеи поверх avatar.png);
- *  - лавка/примерочная: купить за звёзды → надеть, маскот меняется визуально;
- *  - баланс звёзд; прогресс по темам/стадиям; смена своего PIN.
+ * Кабинет ребёнка: «Я и мой питомец».
+ *  - конструктор аватара (DiceBear) — ребёнок собирает себя сам;
+ *  - питомец-тамагочи, растёт от решённых задач;
+ *  - прогресс по темам/стадиям; смена своего PIN.
  *
- * Состояние гардероба и потраченные звёзды хранятся в localStorage по childId.
- * SEAM ДЛЯ БД: заменить load/save на чтение/запись child_profiles.mascot (jsonb) и stars.
+ * Единый кошелёк звёзд: баланс = baseStars − потрачено. Покупки (премиум-элементы
+ * аватара, новые питомцы) идут через buy() и копятся в localStorage по childId.
+ * SEAM ДЛЯ БД: заменить кошелёк на child_profiles.stars_spent.
  */
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AvatarBuilder } from "./AvatarBuilder";
 import { PetCompanion } from "./PetCompanion";
-
-type Slot = "hat" | "eyes" | "neck" | "color";
-interface Item { id: string; slot: Slot; name: string; emoji?: string; cost: number; hue?: number; swatch?: string }
-
-const ITEMS: Item[] = [
-  // головные уборы
-  { id: "cap", slot: "hat", name: "Кепка", emoji: "🧢", cost: 0 },
-  { id: "grad", slot: "hat", name: "Шапочка выпускника", emoji: "🎓", cost: 60 },
-  { id: "crown", slot: "hat", name: "Корона", emoji: "👑", cost: 150 },
-  { id: "tophat", slot: "hat", name: "Цилиндр", emoji: "🎩", cost: 90 },
-  // очки
-  { id: "sun", slot: "eyes", name: "Очки", emoji: "🕶️", cost: 40 },
-  { id: "glass", slot: "eyes", name: "Очки-умника", emoji: "👓", cost: 35 },
-  // на шею
-  { id: "scarf", slot: "neck", name: "Шарф", emoji: "🧣", cost: 30 },
-  { id: "bow", slot: "neck", name: "Бабочка", emoji: "🎀", cost: 25 },
-  { id: "medal", slot: "neck", name: "Медаль", emoji: "🥇", cost: 120 },
-  // цвет толстовки
-  { id: "blue", slot: "color", name: "Синяя", cost: 0, hue: 0, swatch: "#2f7ad6" },
-  { id: "green", slot: "color", name: "Зелёная", cost: 70, hue: 95, swatch: "#3fae5a" },
-  { id: "pink", slot: "color", name: "Розовая", cost: 70, hue: -70, swatch: "#ec5f9e" },
-  { id: "purple", slot: "color", name: "Фиолетовая", cost: 70, hue: 150, swatch: "#8b5cf6" },
-];
-const SLOT_TITLE: Record<Slot, string> = { hat: "Головные уборы", eyes: "Очки", neck: "На шею", color: "Цвет толстовки" };
-const SLOTS: Slot[] = ["hat", "eyes", "neck", "color"];
-const cssVars = (o: Record<string, string | number>) => o as unknown as CSSProperties;
 
 export interface ThemeRow { id: string; title: string; icon: string; stage: string; color: string; badge: boolean }
 
@@ -47,55 +23,46 @@ export function ProfileScreen({
 }: {
   childId: string; name: string; grade: number; baseStars: number; themes: ThemeRow[]; petXp: number;
 }) {
-  const key = `mysh_mascot_${childId}`;
+  const wkey = `mysh_wallet_${childId}`;
   const [mounted, setMounted] = useState(false);
-  const [owned, setOwned] = useState<string[]>(["cap", "blue"]);
-  const [equipped, setEquipped] = useState<Partial<Record<Slot, string>>>({ color: "blue" });
   const [spent, setSpent] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
     try {
-      const raw = localStorage.getItem(key);
+      const raw = localStorage.getItem(wkey);
       if (raw) {
         const s = JSON.parse(raw);
-        if (Array.isArray(s.owned)) setOwned(s.owned);
-        if (s.equipped) setEquipped(s.equipped);
         if (typeof s.spent === "number") setSpent(s.spent);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
-    try { localStorage.setItem(key, JSON.stringify({ owned, equipped, spent })); } catch { /* ignore */ }
-  }, [owned, equipped, spent, mounted, key]);
+    try {
+      localStorage.setItem(wkey, JSON.stringify({ spent }));
+    } catch {
+      /* ignore */
+    }
+  }, [spent, mounted, wkey]);
 
   const stars = baseStars - spent;
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 1600); };
 
-  function onItem(it: Item) {
-    if (!owned.includes(it.id)) {
-      if (stars < it.cost) { flash("Не хватает звёзд ⭐"); return; }
-      setOwned((o) => [...o, it.id]);
-      setSpent((s) => s + it.cost);
-      setEquipped((e) => ({ ...e, [it.slot]: it.id }));
-      flash(`Куплено: ${it.name}!`);
-      return;
-    }
-    // владеет → надеть/снять (цвет всегда надет)
-    setEquipped((e) => {
-      const cur = e[it.slot];
-      if (it.slot === "color") return { ...e, color: it.id };
-      return { ...e, [it.slot]: cur === it.id ? undefined : it.id };
-    });
+  /** Списать звёзды. true — успех; false — не хватило. */
+  function buy(cost: number): boolean {
+    if (cost <= 0) return true;
+    if (!mounted) return false;
+    if (stars < cost) { flash("Не хватает звёзд ⭐"); return false; }
+    setSpent((s) => s + cost);
+    flash("Открыто! ⭐");
+    return true;
   }
-
-  const colorItem = ITEMS.find((i) => i.id === equipped.color);
-  const hue = colorItem?.hue ?? 0;
-  const wornBy = (slot: Slot) => ITEMS.find((i) => i.id === equipped[slot]);
 
   return (
     <main className="pf-stage" aria-label="Профиль">
@@ -105,50 +72,11 @@ export function ProfileScreen({
           <span className="pf-stars">⭐ {mounted ? stars : baseStars}</span>
         </header>
 
-        {/* Витрина маскота */}
-        <section className="pf-hero">
-          <div className="pf-mascot">
-            <div className="pf-mascot-glow" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="pf-mascot-img" src="/myshmat-assets/avatar.png" alt="Маскот" style={cssVars({ filter: hue ? `hue-rotate(${hue}deg)` : "none" })} />
-            {wornBy("hat") && <span className="pf-wear hat">{wornBy("hat")!.emoji}</span>}
-            {wornBy("eyes") && <span className="pf-wear eyes">{wornBy("eyes")!.emoji}</span>}
-            {wornBy("neck") && <span className="pf-wear neck">{wornBy("neck")!.emoji}</span>}
-          </div>
-          <div className="pf-id">
-            <h1>{name}</h1>
-            <span className="pf-class">{grade} класс</span>
-          </div>
-        </section>
+        {/* Конструктор аватара ребёнка */}
+        <AvatarBuilder childId={childId} name={name} grade={grade} stars={stars} buy={buy} />
 
         {/* Питомец-тамагочи */}
-        <PetCompanion childId={childId} petXp={petXp} />
-
-        {/* Гардероб / лавка */}
-        <section className="pf-card">
-          <h2>👕 Мой маскот — лавка нарядов</h2>
-          <p className="pf-hint">Покупай за звёзды и наряжай маскота. Нажми «надетое», чтобы снять.</p>
-          {SLOTS.map((slot) => (
-            <div key={slot} className="pf-slot">
-              <h3>{SLOT_TITLE[slot]}</h3>
-              <div className="pf-items">
-                {ITEMS.filter((i) => i.slot === slot).map((it) => {
-                  const has = mounted && owned.includes(it.id);
-                  const on = mounted && equipped[it.slot] === it.id;
-                  return (
-                    <button key={it.id} className={`pf-item ${on ? "on" : ""} ${has ? "owned" : ""}`} onClick={() => onItem(it)}>
-                      <span className="pf-item-prev">
-                        {it.swatch ? <span className="pf-swatch" style={cssVars({ background: it.swatch })} /> : it.emoji}
-                      </span>
-                      <span className="pf-item-name">{it.name}</span>
-                      <span className="pf-item-tag">{on ? "✓ Надето" : has ? "Надеть" : `⭐ ${it.cost}`}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </section>
+        <PetCompanion childId={childId} petXp={petXp} stars={stars} buy={buy} />
 
         {/* Прогресс по темам */}
         <section className="pf-card">
@@ -171,7 +99,7 @@ export function ProfileScreen({
           </div>
         </section>
 
-        {/* Настройки: смена PIN */}
+        {/* Смена PIN */}
         <ChangePin />
 
         {toast && <div className="pf-toast">{toast}</div>}

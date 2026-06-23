@@ -90,7 +90,7 @@
 .pet-view{position:relative;display:grid;place-items:center;inline-size:var(--pet-size,150px);block-size:var(--pet-size,150px)}
 .pet-view.bob .pet-face,.pet-view.bob .pet-anim{animation:pet-bob 2.6s ease-in-out infinite}
 @keyframes pet-bob{0%,100%{transform:translateY(0) scale(var(--pet-scale,1))}50%{transform:translateY(-7%) scale(var(--pet-scale,1))}}
-.pet-glow{position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--pet-accent) 60%,transparent),transparent 66%);animation:pet-glow 3s ease-in-out infinite}
+.pet-glow{position:absolute;inset:calc(9% - var(--pet-stage,0) * 6%);border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--pet-accent) calc(45% + var(--pet-stage,0) * 35%),transparent),transparent 66%);animation:pet-glow 3s ease-in-out infinite}
 @keyframes pet-glow{0%,100%{opacity:.45;transform:scale(.92)}50%{opacity:.9;transform:scale(1.06)}}
 .pet-face{grid-area:1/1;z-index:0;font-size:calc(var(--pet-size,150px) * .56 * var(--pet-scale,1));line-height:1;filter:drop-shadow(0 8px 12px rgba(60,90,160,.3))}
 .pet-anim{grid-area:1/1;z-index:1;inline-size:calc(var(--pet-size,150px) * .82 * var(--pet-scale,1));block-size:calc(var(--pet-size,150px) * .82 * var(--pet-scale,1));object-fit:contain;filter:drop-shadow(0 8px 12px rgba(60,90,160,.3))}
@@ -118,4 +118,37 @@
 .pet-pat-btn{margin-top:12px;border:0;cursor:pointer;font-family:inherit;font-weight:800;color:#fff;background:var(--pet-accent);border-radius:12px;padding:10px 20px;font-size:clamp(13px,1.45vw,16px);box-shadow:0 6px 14px color-mix(in srgb,var(--pet-accent) 36%,transparent)}
 .pet-pat-btn:active{transform:translateY(1px)}
 .pet-foot{margin-top:14px;color:#7c879b;font-weight:600;font-size:clamp(11px,1.25vw,13px);line-height:1.4}
-@media (prefers-reduced-motion:reduce){.pet-glow,.pet-view.bob .pet-face,.pet-skel{animation:none}}
+.pet-grow{margin-top:6px;font-weight:700;color:#7c879b;font-size:clamp(12px,1.35vw,14px)}
+.pet-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.pet-swap-btn{border:0;cursor:pointer;font-family:inherit;font-weight:800;color:#41506f;background:#eef2f9;border-radius:12px;padding:10px 18px;font-size:clamp(13px,1.45vw,16px)}
+.pet-swap-btn:hover{background:#e3e9f3}
+.pet-choice-tag{margin-top:4px;font-weight:900;font-size:clamp(11px,1.2vw,13px);color:#b5740a}
+.pet-cancel{margin-top:12px;border:0;cursor:pointer;font-family:inherit;font-weight:800;color:#647089;background:transparent;font-size:clamp(13px,1.4vw,15px)}
+@media (prefers-reduced-motion:reduce){.pet-glow,.pet-view.bob .pet-face,.pet-view.bob .pet-anim,.pet-skel{animation:none}}
+
+/* ── Конструктор аватара ── */
+.av-card{--pet-accent:#2E8BE6}
+.av-head{display:flex;align-items:center;gap:clamp(14px,2.6vw,30px);flex-wrap:wrap;margin-bottom:8px}
+.av-preview-wrap{flex:0 0 auto;inline-size:clamp(120px,22vw,180px);block-size:clamp(120px,22vw,180px);border-radius:26px;background:linear-gradient(180deg,#eaf4ff,#dcebff);display:grid;place-items:center;box-shadow:0 12px 28px rgba(37,75,131,.16);overflow:hidden}
+.av-preview{inline-size:92%;block-size:92%;object-fit:contain;border-radius:20px}
+.av-id{flex:1;min-inline-size:200px}
+.av-name{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(26px,4vw,44px);line-height:1}
+.av-class{display:inline-block;margin-top:8px;background:#fff;border-radius:999px;padding:4px 14px;font-weight:800;color:#2E8BE6;font-size:clamp(13px,1.5vw,16px);box-shadow:0 3px 8px rgba(37,75,131,.12)}
+.av-gender{display:flex;gap:8px;margin-top:12px}
+.av-gbtn{cursor:pointer;font-family:inherit;font-weight:800;border:2px solid #e3e9f3;background:#f7f9fd;color:#41506f;border-radius:12px;padding:8px 14px;font-size:clamp(13px,1.45vw,15px);transition:border-color .12s,background .12s}
+.av-gbtn.on{border-color:var(--blue,#2E8BE6);background:#e7f1ff;color:#1F6FD0}
+.av-title{margin-top:6px}
+
+.av-row{margin-top:clamp(10px,1.4vw,15px)}
+.av-row-t{font-weight:800;color:#41506f;font-size:clamp(13px,1.45vw,16px);margin-bottom:8px}
+.av-swatches{display:flex;flex-wrap:wrap;gap:9px}
+.av-swatch{inline-size:clamp(30px,4.4vw,40px);block-size:clamp(30px,4.4vw,40px);border-radius:50%;cursor:pointer;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.18);outline:2px solid transparent;transition:transform .12s,outline-color .12s}
+.av-swatch:hover{transform:scale(1.08)}
+.av-swatch.on{outline-color:var(--blue,#2E8BE6);transform:scale(1.08)}
+.av-swatch.tr{background-image:linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,#fff 25%,#fff 75%,#ddd 75%);background-size:10px 10px;background-position:0 0,5px 5px}
+.av-chips{display:flex;flex-wrap:wrap;gap:8px}
+.av-chip{position:relative;cursor:pointer;font-family:inherit;font-weight:700;border:2px solid #e3e9f3;background:#f7f9fd;color:#33415f;border-radius:12px;padding:8px 14px;font-size:clamp(12px,1.35vw,15px);transition:transform .12s,border-color .12s,box-shadow .12s}
+.av-chip:hover{transform:translateY(-2px);box-shadow:0 8px 16px rgba(37,75,131,.12)}
+.av-chip.on{border-color:var(--green,#42C263);background:#e9f9ec;color:#2fad50}
+.av-chip.locked{border-style:dashed;color:#8a93a6}
+.av-price{margin-left:7px;font-weight:900;color:#b5740a;font-size:.92em}

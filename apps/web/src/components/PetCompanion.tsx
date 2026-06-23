@@ -2,38 +2,45 @@
 
 /**
  * «Мой питомец» — тамагочи с лёгкой заботой.
- *  - на старте ребёнок выбирает питомца из каталога;
- *  - питомец растёт (эволюция стадий) по мере решения олимпиадных задач (petXp);
- *  - лёгкая забота: доброе настроение + кнопка «погладить» (только позитив, без угасания);
+ *  - на старте ребёнок выбирает питомца (первый — бесплатно, ещё — за звёзды);
+ *  - питомец растёт от решения задач: РАЗМЕР и СВЕЧЕНИЕ усиливаются со стадией
+ *    (без аксессуаров и лишних подписей);
+ *  - лёгкая забота: доброе настроение + «погладить» (только позитив, без угасания);
  *  - празднование роста/эволюции при возвращении после новых успехов.
  *
- * Состояние (выбранный вид, имя, последний визит, последний учтённый xp) — в
- * localStorage по childId. SEAM ДЛЯ БД: заменить load/save на child_profiles.pet (jsonb).
+ * Состояние — в localStorage по childId. SEAM ДЛЯ БД: child_profiles.pet (jsonb).
  */
 
 import { useEffect, useRef, useState } from "react";
-import { PET_SPECIES, getSpecies, stageFor, nextStage, stageProgress } from "@/lib/pet";
+import { PET_SPECIES, getSpecies, stageFor } from "@/lib/pet";
 import { PetView } from "./PetView";
+
+const PET_COST = 100; // цена второго и последующих питомцев
 
 interface PetState {
   speciesId?: string;
   name?: string;
+  owned?: string[];
   lastVisit?: number;
   lastXp?: number;
 }
 
-export function PetCompanion({ childId, petXp }: { childId: string; petXp: number }) {
+export function PetCompanion({
+  childId, petXp, stars, buy,
+}: {
+  childId: string; petXp: number; stars: number; buy: (cost: number) => boolean;
+}) {
   const key = `mysh_pet_${childId}`;
   const [mounted, setMounted] = useState(false);
   const [pet, setPet] = useState<PetState>({});
   const [mood, setMood] = useState("");
   const [celebrate, setCelebrate] = useState<"grow" | "evolve" | null>(null);
   const [pat, setPat] = useState(false);
+  const [choosing, setChoosing] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const patTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Загрузка + расчёт настроения и празднования за один проход на маунте.
   useEffect(() => {
     setMounted(true);
     let p: PetState = {};
@@ -57,13 +64,11 @@ export function PetCompanion({ childId, petXp }: { childId: string; petXp: numbe
         setCelebrate(evolved ? "evolve" : "grow");
         setTimeout(() => setCelebrate(null), 2800);
       }
-      // отметить визит и зафиксировать учтённый xp
       setPet({ ...p, lastVisit: Date.now(), lastXp: petXp });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Сохранение состояния.
   useEffect(() => {
     if (!mounted) return;
     try {
@@ -74,8 +79,21 @@ export function PetCompanion({ childId, petXp }: { childId: string; petXp: numbe
   }, [pet, mounted, key]);
 
   function choose(id: string) {
+    const owned = pet.owned ?? [];
+    const isOwned = owned.includes(id);
+    if (!isOwned) {
+      if (owned.length > 0 && !buy(PET_COST)) return; // первый бесплатно, далее за звёзды
+    }
     const sp = getSpecies(id);
-    setPet({ speciesId: id, name: sp.name, lastVisit: Date.now(), lastXp: petXp });
+    setPet((p) => ({
+      ...p,
+      speciesId: id,
+      name: p.speciesId ? p.name : sp.name, // имя сохраняем при смене вида
+      owned: isOwned ? owned : [...owned, id],
+      lastVisit: Date.now(),
+      lastXp: petXp,
+    }));
+    setChoosing(false);
   }
 
   function petTheCompanion() {
@@ -101,20 +119,32 @@ export function PetCompanion({ childId, petXp }: { childId: string; petXp: numbe
   }
 
   // ── Экран выбора питомца ──
-  if (!pet.speciesId) {
+  if (!pet.speciesId || choosing) {
+    const owned = pet.owned ?? [];
+    const firstFree = owned.length === 0;
     return (
       <section className="pf-card pet-card">
-        <h2>🐣 Выбери питомца</h2>
-        <p className="pf-hint">Он будет расти и радоваться, когда ты решаешь задачи. Выбери друга — это навсегда (ну, почти 😊).</p>
+        <h2>🐣 {firstFree ? "Выбери питомца" : "Сменить питомца"}</h2>
+        <p className="pf-hint">
+          {firstFree
+            ? "Он будет расти и радоваться, когда ты решаешь задачи. Первый питомец — бесплатно!"
+            : `Свои питомцы — бесплатно. Новый стоит ⭐${PET_COST}.`}
+        </p>
         <div className="pet-choose">
-          {PET_SPECIES.map((s) => (
-            <button key={s.id} className="pet-choice" onClick={() => choose(s.id)} style={{ ["--pet-accent" as string]: s.accent }}>
-              <span className="pet-choice-face">{s.emoji}</span>
-              <span className="pet-choice-name">{s.name}</span>
-              <span className="pet-choice-blurb">{s.blurb}</span>
-            </button>
-          ))}
+          {PET_SPECIES.map((s) => {
+            const isOwned = owned.includes(s.id);
+            const price = !isOwned && !firstFree ? PET_COST : 0;
+            return (
+              <button key={s.id} className="pet-choice" onClick={() => choose(s.id)} style={{ ["--pet-accent" as string]: s.accent }}>
+                <span className="pet-choice-face">{s.emoji}</span>
+                <span className="pet-choice-name">{s.name}</span>
+                <span className="pet-choice-blurb">{s.blurb}</span>
+                <span className="pet-choice-tag">{isOwned ? "✓ твой" : price ? `⭐ ${price}` : "Бесплатно"}</span>
+              </button>
+            );
+          })}
         </div>
+        {!firstFree && <button className="pet-cancel" onClick={() => setChoosing(false)}>Отмена</button>}
       </section>
     );
   }
@@ -122,8 +152,6 @@ export function PetCompanion({ childId, petXp }: { childId: string; petXp: numbe
   // ── Витрина питомца ──
   const sp = getSpecies(pet.speciesId);
   const cur = stageFor(petXp);
-  const nxt = nextStage(petXp);
-  const prog = stageProgress(petXp);
 
   return (
     <section className="pf-card pet-card" style={{ ["--pet-accent" as string]: sp.accent }}>
@@ -133,7 +161,7 @@ export function PetCompanion({ childId, petXp }: { childId: string; petXp: numbe
         <div className={`pet-hero${pat ? " patted" : ""}`} onClick={petTheCompanion} title="Погладить">
           <PetView speciesId={pet.speciesId} stageId={cur.id} size={150} />
           {pat && <span className="pet-heart">💛</span>}
-          {celebrate && <span className={`pet-cele ${celebrate}`}>{celebrate === "evolve" ? "✨ Эволюция!" : "🎉 Подрос!"}</span>}
+          {celebrate && <span className={`pet-cele ${celebrate}`}>{celebrate === "evolve" ? "✨ Подрос!" : "🎉 +рост"}</span>}
         </div>
 
         <div className="pet-meta">
@@ -157,21 +185,15 @@ export function PetCompanion({ childId, petXp }: { childId: string; petXp: numbe
             </h3>
           )}
 
-          <span className="pet-stage-badge">{cur.name}</span>
           <p className="pet-mood">{mood}</p>
+          <p className="pet-grow">Растёт, когда ты решаешь задачи 🌱</p>
 
-          <div className="pet-bar" aria-label="Полоска роста">
-            <span className="pet-bar-fill" style={{ width: `${Math.round(prog * 100)}%` }} />
+          <div className="pet-actions">
+            <button className="pet-pat-btn" onClick={petTheCompanion}>🤚 Погладить</button>
+            <button className="pet-swap-btn" onClick={() => setChoosing(true)}>Сменить</button>
           </div>
-          <p className="pet-next">
-            {nxt ? <>Реши ещё задачи — и {pet.name} станет «{nxt.name}»!</> : <>Максимальная стадия — настоящий Мастер! 🏆</>}
-          </p>
-
-          <button className="pet-pat-btn" onClick={petTheCompanion}>🤚 Погладить</button>
         </div>
       </div>
-
-      <p className="pet-foot">Питомец растёт от решённых задач и освоенных тем. Он всегда тебе рад и никогда не грустит 💚</p>
     </section>
   );
 }

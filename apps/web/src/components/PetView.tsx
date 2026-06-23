@@ -36,7 +36,9 @@ export function PetView({
   bob?: boolean;
 }) {
   const sp = getSpecies(speciesId);
-  const stage = STAGES.find((s) => s.id === stageId) ?? STAGES[0];
+  const stageIdx = Math.max(0, STAGES.findIndex((s) => s.id === stageId));
+  const stage = STAGES[stageIdx] ?? STAGES[0];
+  const stagePct = STAGES.length > 1 ? stageIdx / (STAGES.length - 1) : 0;
   // На стадии «яйцо» вид ещё не вылупился.
   const cp = stageId === "egg" ? EGG_NOTO : sp.noto;
   const face = stageId === "egg" ? "🥚" : sp.emoji;
@@ -45,7 +47,7 @@ export function PetView({
   return (
     <div
       className={`pet-view${bob ? " bob" : ""}`}
-      style={cssVars({ "--pet-accent": sp.accent, "--pet-size": `${size}px`, "--pet-scale": stage.scale })}
+      style={cssVars({ "--pet-accent": sp.accent, "--pet-size": `${size}px`, "--pet-scale": stage.scale, "--pet-stage": stagePct })}
       aria-label={`${sp.name}, стадия: ${stage.name}`}
     >
       <span className="pet-glow" />
@@ -68,8 +70,6 @@ export function PetView({
         }}
       />
       {/* )} */}
-
-      {stage.accessory && stageId !== "egg" && <span className="pet-acc">{stage.accessory}</span>}
     </div>
   );
 }

@@ -1,13 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ChildProfile } from "@/types/domain";
+import { buildAvatarUrl, DEFAULT_AVATAR, type AvatarConfig } from "@/lib/avatar";
 
 export function ProfileCard({ profile }: { profile: ChildProfile }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`mysh_avatar_${profile.id}`);
+      if (raw) {
+        const s = JSON.parse(raw);
+        const cfg: AvatarConfig = { ...DEFAULT_AVATAR, ...(s.cfg ?? {}) };
+        setAvatarUrl(buildAvatarUrl(cfg, 96));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [profile.id]);
 
   async function switchProfile() {
     await fetch("/api/logout", { method: "POST" }).catch(() => {});
@@ -17,7 +32,12 @@ export function ProfileCard({ profile }: { profile: ChildProfile }) {
   return (
     <div className="profile card" style={{ position: "relative" }}>
       <Link href="/profile" aria-label="Открыть профиль" style={{ display: "flex", alignItems: "center", gap: "inherit", textDecoration: "none", color: "inherit", flex: 1, minWidth: 0 }}>
-        <div className="avatar" />
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="avatar" src={avatarUrl} alt="" style={{ objectFit: "cover" }} />
+        ) : (
+          <div className="avatar" />
+        )}
         <div>
           <b>{profile.name}</b>
           <small>{profile.grade} класс</small>
