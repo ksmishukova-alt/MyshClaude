@@ -4,10 +4,10 @@
 .ch-back{background:rgba(255,255,255,.92);border-radius:999px;padding:9px 16px;font-weight:700;color:var(--blue,#2E8BE6);text-decoration:none;box-shadow:0 6px 16px rgba(37,75,131,.12);font-size:clamp(13px,1.4vw,16px)}
 .ch-top h1{font-family:var(--font-display,system-ui);font-weight:800;color:#082460;font-size:clamp(22px,3vw,36px)}
 .ch-intro{background:rgba(255,255,255,.85);border-radius:16px;padding:clamp(11px,1.5vw,16px);color:#4a5775;font-weight:600;margin-bottom:clamp(16px,2vw,24px);font-size:clamp(13px,1.5vw,16px)}
-.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(220px,40vw,280px),1fr));gap:clamp(16px,2.2vw,26px)}
+.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(220px,40vw,280px),1fr));gap:clamp(16px,2.2vw,26px);align-items:start}
 
 /* ── Карточка ── */
-.ch-card{position:relative;border-radius:24px;padding:clamp(14px,1.8vw,22px);display:flex;flex-direction:column;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.6);box-shadow:0 14px 34px rgba(37,75,131,.18);overflow:hidden;background:
+.ch-card{position:relative;border-radius:24px;padding:clamp(14px,1.8vw,22px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;min-block-size:clamp(440px,60vw,510px);border:1px solid rgba(255,255,255,.6);box-shadow:0 14px 34px rgba(37,75,131,.18);overflow:hidden;background:
   radial-gradient(130% 80% at 50% -10%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%),
   linear-gradient(180deg,#2f7ad6,#1f5bb0)}
 .ch-card::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 50% at 50% 120%,rgba(80,200,120,.25),transparent 70%);pointer-events:none}
