@@ -6,12 +6,25 @@ import { fanGeometry, gridGeometry } from "@/lib/figures";
 
 const W = 320, H = 240;
 
-/** Веер: лучи из одной вершины делят основание на n «комнат». */
-export function FanFigure({ n, numberRooms = false }: { n: number; numberRooms?: boolean }) {
+/**
+ * Веер: лучи из одной вершины делят основание на n «комнат».
+ * floors — число горизонтальных этажных линий (0 = просто комнаты).
+ */
+export function FanFigure({ n, numberRooms = false, floors = 0 }: { n: number; numberRooms?: boolean; floors?: number }) {
   const g = fanGeometry(n, W, H);
   const outer = `${g.apex.x},${g.apex.y} ${g.base[0].x},${g.base[0].y} ${g.base[n].x},${g.base[n].y}`;
+  // горизонтальные этажи: линия на доле t от вершины к основанию, обрезанная боковыми сторонами
+  const floorLines = Array.from({ length: floors }, (_, k) => {
+    const t = (k + 1) / (floors + 1);
+    const y = g.apex.y + t * (g.baseY - g.apex.y);
+    return {
+      y,
+      lx: g.apex.x + t * (g.base[0].x - g.apex.x),
+      rx: g.apex.x + t * (g.base[n].x - g.apex.x),
+    };
+  });
   return (
-    <svg className="fig-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Веер из ${n} комнат`}>
+    <svg className="fig-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Веер из ${n} комнат${floors ? `, ${floors} этажей` : ""}`}>
       <polygon points={outer} fill="#eaf4ff" stroke="#1f6fd0" strokeWidth={3} strokeLinejoin="round" />
       {numberRooms &&
         g.rooms.map((r, i) => (
@@ -19,6 +32,9 @@ export function FanFigure({ n, numberRooms = false }: { n: number; numberRooms?:
         ))}
       {g.base.map((p, i) => (
         <line key={`c${i}`} x1={g.apex.x} y1={g.apex.y} x2={p.x} y2={p.y} stroke="#1f6fd0" strokeWidth={i === 0 || i === n ? 3 : 2} />
+      ))}
+      {floorLines.map((f, i) => (
+        <line key={`f${i}`} x1={f.lx} y1={f.y} x2={f.rx} y2={f.y} stroke="#1f6fd0" strokeWidth={2} strokeDasharray="5 4" />
       ))}
       <line x1={g.base[0].x} y1={g.baseY} x2={g.base[n].x} y2={g.baseY} stroke="#1f6fd0" strokeWidth={3} />
       {numberRooms &&

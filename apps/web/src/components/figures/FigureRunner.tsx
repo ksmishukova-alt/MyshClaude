@@ -7,11 +7,11 @@
  */
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   genFan, genGrid, LIFEHACKS, type FigKind, type FigStage,
 } from "@/lib/figures";
 import { FanFigure, GridFigure } from "./FigureView";
-import { LifehackCard } from "./LifehackCard";
 
 interface Step { label: string; expected: number; hint?: string }
 
@@ -90,7 +90,10 @@ export function FigureRunner({
       </div>
 
       {(showRule || stage === "learn") && (
-        <LifehackCard lh={lh} compact={stage !== "learn"} />
+        <div className="fr-rule">
+          <span className="fr-rule-txt">💡 {lh.rule}</span>
+          <Link className="fr-rule-link" href="/figures/rules">📖 Лист правил</Link>
+        </div>
       )}
 
       {!done ? (

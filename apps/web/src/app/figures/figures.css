@@ -56,4 +56,32 @@
 .lh-examples ul{margin:4px 0 0;padding-left:18px;color:#5a4a2a;font-weight:700;font-size:clamp(12px,1.4vw,15px);line-height:1.6}
 .lh-check{background:#eaf4ff;border-radius:10px;padding:9px 12px;color:#1f5bb0;font-weight:700;font-size:clamp(12px,1.4vw,15px)}
 
+/* ── компактное напоминание правила в раннере ── */
+.fr-rule{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff8e9;border:1px solid #ffe0a3;border-radius:13px;padding:10px 14px}
+.fr-rule-txt{font-weight:800;color:#13315f;font-size:clamp(13px,1.5vw,16px);flex:1;min-inline-size:160px;line-height:1.35}
+.fr-rule-link{font-weight:800;color:#b5740a;text-decoration:none;font-size:clamp(12px,1.35vw,14px);white-space:nowrap}
+.fr-rule-link:hover{text-decoration:underline}
+
+/* ── Лист правил ── */
+.rl-card{background:rgba(255,255,255,.97);border-radius:22px;padding:clamp(16px,2.2vw,26px);box-shadow:0 14px 34px rgba(37,75,131,.16);border:1px solid rgba(255,255,255,.7);display:flex;flex-direction:column;gap:clamp(12px,1.6vw,16px)}
+.rl-h{font-family:var(--font-display,system-ui);font-weight:800;color:#13315f;font-size:clamp(19px,2.3vw,26px)}
+.rl-ex{display:flex;gap:clamp(14px,2.2vw,24px);align-items:center;flex-wrap:wrap;background:#f6f9fd;border-radius:16px;padding:clamp(12px,1.6vw,18px)}
+.rl-fig{flex:0 0 auto;inline-size:clamp(150px,26vw,220px)}
+.rl-fig .fig-svg{inline-size:100%}
+.rl-body{flex:1;min-inline-size:220px;display:flex;flex-direction:column;gap:7px}
+.rl-tag{align-self:flex-start;background:#e7f1ff;color:#1F6FD0;font-weight:800;font-size:clamp(11px,1.2vw,13px);padding:3px 12px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+.rl-rule{background:#fff;border-radius:12px;padding:11px 14px;font-weight:800;color:#13315f;font-size:clamp(14px,1.6vw,17px);box-shadow:0 3px 8px rgba(37,75,131,.1);line-height:1.4}
+.rl-rec{font-weight:800;color:#1f5bb0;font-size:clamp(14px,1.6vw,18px);font-variant-numeric:tabular-nums}
+.rl-rec b{color:#2fad50}
+.rl-why{color:#5a647c;font-weight:600;font-size:clamp(12px,1.4vw,15px);line-height:1.45}
+.rl-text{color:#41506f;font-weight:600;font-size:clamp(13px,1.5vw,16px);line-height:1.45}
+.rl-sub{font-weight:800;color:#b5740a;font-size:clamp(13px,1.45vw,16px)}
+.rl-list{margin:0;padding-left:20px;color:#1f5bb0;font-weight:800;font-size:clamp(13px,1.5vw,16px);line-height:1.8;font-variant-numeric:tabular-nums}
+.rl-check{background:#eaf4ff;border-radius:12px;padding:10px 14px;color:#1f5bb0;font-weight:700;font-size:clamp(12px,1.4vw,15px)}
+.rl-ladder{overflow-x:auto}
+.rl-ladder table{border-collapse:collapse;min-inline-size:100%}
+.rl-ladder th,.rl-ladder td{border:1px solid #d6e2f2;padding:7px 10px;text-align:center;font-weight:800;font-size:clamp(12px,1.4vw,15px);color:#13315f}
+.rl-ladder thead th{background:#eaf4ff;color:#1f5bb0}
+.rl-ladder tbody td:first-child,.rl-ladder thead th:first-child{background:#fff8e9;color:#b5740a;text-align:left}
+
 @media (prefers-reduced-motion:reduce){.fr-input-row.shake{animation:none}}

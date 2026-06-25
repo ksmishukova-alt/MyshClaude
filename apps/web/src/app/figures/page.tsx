@@ -47,6 +47,10 @@ export default function FiguresPage() {
         <p className="fig-intro">Не ищи фигуры глазами — заметь признак и примень лайфхак. 🪄</p>
 
         <div className="fig-tabs">
+          <Link className="fig-tab" href="/figures/rules">📖 Лист правил</Link>
+        </div>
+
+        <div className="fig-tabs">
           {KINDS.map((k) => (
             <button key={k.id} className={`fig-tab ${kind === k.id ? "on" : ""}`} onClick={() => chooseKind(k.id)}>
               {k.emoji} {k.label}
